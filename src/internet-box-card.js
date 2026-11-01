@@ -345,13 +345,13 @@ const bboxMiamiSvg = () => {
   const frontH = 58;
   const fy = yTop + topH;
   const bottom = fy + frontH;
-  const defs = grad("bbm t", [[0, "#26272b"], [0.5, "#141416"], [1, "#0d0d0f"]], 1, 0) + grad("bbmf", [[0, "#1c1c1f"], [1, "#0b0b0d"]]);
+  const defs = grad("bbmt", [[0, "#26272b"], [0.5, "#141416"], [1, "#0d0d0f"]], 1, 0) + grad("bbmf", [[0, "#1c1c1f"], [1, "#0b0b0d"]]);
   let s = `<ellipse cx="150" cy="${bottom + 10}" rx="${Math.round(w * 0.5)}" ry="8" opacity=".3"/>`;
   // Feet.
   s += `<rect x="${x + 16}" y="${bottom - 2}" width="20" height="8" rx="3" fill="#141417"/><rect x="${x + w - 36}" y="${bottom - 2}" width="20" height="8" rx="3" fill="#141417"/>`;
   // Glossy top face with a diagonal sheen.
   const topShape = `M${x + 12} ${yTop} H${x + w - 8} L${x + w} ${fy} H${x} Z`;
-  s += `<path d="${topShape}" fill="url(#bbm t)"/>`;
+  s += `<path d="${topShape}" fill="url(#bbmt)"/>`;
   s += `<clipPath id="bbmc"><path d="${topShape}"/></clipPath><path clip-path="url(#bbmc)" d="M${x + 36} ${yTop} L${x + 120} ${yTop} L${x + 60} ${fy} L${x - 6} ${fy} Z" fill="#fff" opacity=".07"/>`;
   // Front face with stacked ventilation fins.
   s += `<rect x="${x}" y="${fy}" width="${w}" height="${frontH}" rx="5" fill="url(#bbmf)"/>`;
@@ -1188,7 +1188,12 @@ const partitionLabel = (hass, p, fallback = "Disk") =>
 
 const BASE_STYLE = `
   :host { --ibc-red: #cd1e25; --ibc-ok: var(--success-color, #43a047); --ibc-warn: var(--warning-color, #ffa600); --ibc-crit: var(--error-color, #db4437); }
-  ha-card { overflow: hidden; position: relative; container-type: inline-size; }
+  /* Readable colours: the operator accent and the state colours stay as they are on fills, dots and tints; icons
+     and graphics mix 40 % of the theme text colour (3:1), text 50 % (4.5:1). Mixing with --primary-text-color darkens
+     them in a light theme and lightens them in a dark one (e.g. the dark blue Bbox accent on a dark card). Declared on
+     ha-card, which carries the operator's --ibc-red. */
+  ha-card { overflow: hidden; position: relative; container-type: inline-size;
+            --ibc-accent: color-mix(in srgb, var(--ibc-red) 60%, var(--primary-text-color)); }
   .icon { width: 18px; height: 18px; fill: currentColor; flex: none; }
   .muted { color: var(--secondary-text-color); }
   .clickable { cursor: pointer; }
@@ -1196,11 +1201,13 @@ const BASE_STYLE = `
   .ok { --c: var(--ibc-ok); } .warn { --c: var(--ibc-warn); } .crit { --c: var(--ibc-crit); } .off { --c: var(--disabled-text-color, #9e9e9e); }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c, var(--ibc-ok)); flex: none; display: inline-block; }
   .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;
-          background: color-mix(in srgb, var(--c, var(--ibc-ok)) 15%, transparent); color: var(--c, var(--ibc-ok)); }
+          background: color-mix(in srgb, var(--c, var(--ibc-ok)) 15%, transparent);
+          color: color-mix(in srgb, var(--c, var(--ibc-ok)) 50%, var(--primary-text-color)); }
   .chip .icon { width: 14px; height: 14px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
   .bar { height: 4px; border-radius: 3px; background: var(--divider-color, rgba(127,127,127,.25)); overflow: hidden; }
-  .bar > div { height: 100%; border-radius: 3px; background: var(--c, var(--ibc-red)); transition: width .6s ease; }
+  .bar > div { height: 100%; border-radius: 3px; background: var(--c, var(--ibc-accent)); transition: width .6s ease; }
+  @media (prefers-reduced-motion: reduce) { .bar > div { transition: none; } }
   .header { display: flex; align-items: center; gap: 10px; padding: 12px 12px 8px; }
   /* The status pill sits right of the title line, centred on it; the subtitle and chips stay under the title. */
   .titles { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
@@ -1221,13 +1228,13 @@ const BASE_STYLE = `
   .box { height: 48px; width: auto; max-width: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,.25)); }
   .tile { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; min-width: 0;
           background: var(--secondary-background-color, rgba(127,127,127,.08)); }
-  .tile .icon { color: var(--c, var(--ibc-red)); }
+  .tile .icon { color: color-mix(in srgb, var(--c, var(--ibc-red)) 60%, var(--primary-text-color)); }
   .tile > div { min-width: 0; }
   .tile .k { font-size: 11px; color: var(--secondary-text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tile .v { font-size: 14px; font-weight: 500; white-space: nowrap; }
   .tile.down { --c: var(--ibc-red); }
   .tile.up { --c: var(--info-color, #039be5); }
-  .warning { padding: 16px; color: var(--ibc-warn); }
+  .warning { padding: 16px; color: color-mix(in srgb, var(--ibc-warn) 50%, var(--primary-text-color)); }
   .zoom { all: unset; flex: none; cursor: pointer; width: 24px; height: 24px; margin: -4px -4px -4px 0; border-radius: 50%;
           display: grid; place-items: center; color: var(--secondary-text-color); }
   .zoom .icon { width: 16px; height: 16px; }
@@ -1237,7 +1244,7 @@ const BASE_STYLE = `
   .action { all: unset; flex: none; cursor: pointer; width: 24px; height: 24px; margin: -4px 0; border-radius: 50%;
             display: grid; place-items: center; color: var(--secondary-text-color); }
   .action .icon { width: 16px; height: 16px; }
-  .action:hover { background: color-mix(in srgb, var(--ibc-red) 16%, transparent); color: var(--ibc-red); }
+  .action:hover { background: color-mix(in srgb, var(--ibc-red) 16%, transparent); color: var(--ibc-accent); }
   .action:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 1px; }
 `;
 
@@ -1248,12 +1255,12 @@ const DIALOG_STYLE = `
   .modal { background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color); width: min(92%, 340px); max-height: calc(100% - 24px);
            box-sizing: border-box; border-radius: 14px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.4); display: flex; flex-direction: column; gap: 10px; }
   .modal h3 { margin: 0; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
-  .modal h3 .icon { width: 20px; height: 20px; color: var(--ibc-red); }
+  .modal h3 .icon { width: 20px; height: 20px; color: var(--ibc-accent); }
   .modal .hint { font-size: 13px; color: var(--secondary-text-color); line-height: 1.4; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
   .modal button.act { border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
   .modal button.cancel { background: var(--secondary-background-color, rgba(127,127,127,.12)); color: var(--primary-text-color); }
-  .modal button.danger { background: color-mix(in srgb, var(--ibc-red) 16%, transparent); color: var(--ibc-red); }
+  .modal button.danger { background: color-mix(in srgb, var(--ibc-red) 16%, transparent); color: var(--primary-text-color); }
   .modal button.cancel:hover { background: color-mix(in srgb, var(--secondary-text-color) 16%, var(--secondary-background-color, transparent)); }
   .modal button.danger:hover { background: color-mix(in srgb, var(--ibc-red) 26%, transparent); }
 `;
@@ -1567,7 +1574,7 @@ const FULL_STYLE = `
   .ring { width: 52px; height: 52px; transform: rotate(-90deg); }
   .ring circle { fill: none; stroke-width: 6; }
   .ring .track { stroke: var(--divider-color, rgba(127,127,127,.25)); }
-  .ring .value { stroke: var(--c, var(--ibc-red)); stroke-linecap: round; transition: stroke-dasharray .6s ease; }
+  .ring .value { stroke: var(--c, var(--ibc-accent)); stroke-linecap: round; transition: stroke-dasharray .6s ease; }
   .gauge .val { position: absolute; top: 0; height: 52px; display: flex; align-items: center; justify-content: center; }
   .gauge .val b { font-size: 14px; font-weight: 500; }
   .gauge .lbl { font-size: 12px; color: var(--secondary-text-color); margin-top: 0; text-align: center; white-space: nowrap;
@@ -1587,12 +1594,13 @@ const FULL_STYLE = `
   .tile:has(.reset) { padding-right: 6px; }
   .tile:has(.reset) .v { overflow: hidden; text-overflow: ellipsis; }
   .tile .reset { margin-left: auto; flex: none; display: grid; place-items: center; width: 22px; height: 22px; padding: 0;
-    border: none; border-radius: 50%; cursor: pointer; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); }
+    border: none; border-radius: 50%; cursor: pointer; color: color-mix(in srgb, var(--c) 60%, var(--primary-text-color));
+    background: color-mix(in srgb, var(--c) 15%, transparent); }
   .tile .reset:hover { background: color-mix(in srgb, var(--c) 28%, transparent); }
   .tile .reset .icon { width: 14px; height: 14px; }
   .spin { animation: spin 1.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } .ring .value { transition: none; } }
   /* Full card only (and the zoomed mini, which uses this style): its header also carries the status pill and the
      restart button, so on a narrow card the box picture shrinks to leave room for the title. It always stays
      visible — never hidden — so the box is shown whenever the card is expanded. The compact mini keeps its full-size
@@ -1774,9 +1782,12 @@ const MINI_STYLE = `
           color: var(--secondary-text-color); margin-top: 2px; }
   .foot span { display: inline-flex; align-items: center; gap: 3px; }
   .foot .icon { width: 14px; height: 14px; }
-  .foot .ok .icon { color: var(--ibc-ok); } .foot .warn { color: var(--ibc-warn); } .foot .crit { color: var(--ibc-crit); }
+  .foot .ok .icon { color: color-mix(in srgb, var(--ibc-ok) 60%, var(--primary-text-color)); }
+  .foot .warn { color: color-mix(in srgb, var(--ibc-warn) 50%, var(--primary-text-color)); }
+  .foot .crit { color: color-mix(in srgb, var(--ibc-crit) 50%, var(--primary-text-color)); }
   .foot .reset { display: grid; place-items: center; width: 18px; height: 18px; padding: 0; margin-left: 3px; border: none;
-    border-radius: 50%; cursor: pointer; color: var(--ibc-warn); background: color-mix(in srgb, var(--ibc-warn) 15%, transparent); }
+    border-radius: 50%; cursor: pointer; color: color-mix(in srgb, var(--ibc-warn) 60%, var(--primary-text-color));
+    background: color-mix(in srgb, var(--ibc-warn) 15%, transparent); }
   .foot .reset:hover { background: color-mix(in srgb, var(--ibc-warn) 28%, transparent); }
   .foot .reset .icon { width: 12px; height: 12px; }
 `;
