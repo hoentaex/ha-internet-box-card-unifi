@@ -485,6 +485,7 @@ const STRINGS = {
     raid_degraded: "Degraded",
     online: "Online",
     offline: "Offline",
+    unavailable: "Unavailable",
     hours: "h",
     days: "d",
     minutes: "min",
@@ -537,6 +538,7 @@ const STRINGS = {
     cancel: "Annuler",
     calls: "Appels",
     missed: "manqués",
+    missed_one: "manqué",
     temperature: "Temp.",
     used: "utilisés",
     free: "libres",
@@ -544,6 +546,7 @@ const STRINGS = {
     raid_degraded: "Dégradé",
     online: "En ligne",
     offline: "Hors ligne",
+    unavailable: "Indisponible",
     hours: "h",
     days: "j",
     minutes: "min",
@@ -602,6 +605,7 @@ const STRINGS = {
     raid_degraded: "Beeinträchtigt",
     online: "Verbunden",
     offline: "Getrennt",
+    unavailable: "Nicht verfügbar",
     hours: "h",
     days: "Tg.",
     minutes: "Min.",
@@ -653,6 +657,7 @@ const STRINGS = {
     cancel: "Cancelar",
     calls: "Llamadas",
     missed: "perdidas",
+    missed_one: "perdida",
     temperature: "Temp.",
     used: "usado",
     free: "libre",
@@ -660,6 +665,7 @@ const STRINGS = {
     raid_degraded: "Degradado",
     online: "En línea",
     offline: "Fuera de línea",
+    unavailable: "No disponible",
     hours: "h",
     days: "d",
     minutes: "min",
@@ -710,7 +716,9 @@ const STRINGS = {
     restart_btn: "Поново покрени",
     cancel: "Откажи",
     calls: "Позиви",
-    missed: "пропуштено",
+    missed: "пропуштених",
+    missed_one: "пропуштен",
+    missed_few: "пропуштена",
     temperature: "Темп.",
     used: "искоришћено",
     free: "слободно",
@@ -718,6 +726,7 @@ const STRINGS = {
     raid_degraded: "Деградирано",
     online: "На мрежи",
     offline: "Ван мреже",
+    unavailable: "Недоступно",
     hours: "h",
     days: "d",
     minutes: "min",
@@ -768,7 +777,9 @@ const STRINGS = {
     restart_btn: "Ponovo pokreni",
     cancel: "Otkaži",
     calls: "Pozivi",
-    missed: "propušteno",
+    missed: "propuštenih",
+    missed_one: "propušten",
+    missed_few: "propuštena",
     temperature: "Temp.",
     used: "iskorišćeno",
     free: "slobodno",
@@ -776,6 +787,7 @@ const STRINGS = {
     raid_degraded: "Degradirano",
     online: "Na mreži",
     offline: "Van mreže",
+    unavailable: "Nedostupno",
     hours: "h",
     days: "d",
     minutes: "min",
@@ -835,6 +847,7 @@ const STRINGS = {
     raid_degraded: "Degradato",
     online: "Online",
     offline: "Offline",
+    unavailable: "Non disponibile",
     hours: "h",
     days: "g",
     minutes: "min",
@@ -893,6 +906,7 @@ const STRINGS = {
     raid_degraded: "Gedegradeerd",
     online: "Online",
     offline: "Offline",
+    unavailable: "Niet beschikbaar",
     hours: "u",
     days: "d",
     minutes: "min",
@@ -952,6 +966,7 @@ const STRINGS = {
     raid_degraded: "Degradado",
     online: "Online",
     offline: "Offline",
+    unavailable: "Indisponível",
     hours: "h",
     days: "d",
     minutes: "min",
@@ -1013,6 +1028,7 @@ const STRINGS = {
     raid_degraded: "Zdegradowany",
     online: "Online",
     offline: "Offline",
+    unavailable: "Niedostępne",
     hours: "h",
     days: "d",
     minutes: "min",
@@ -1145,6 +1161,10 @@ const num = (s) => {
   const v = parseFloat(s.state);
   return Number.isFinite(v) ? v : null;
 };
+
+/** True when Home Assistant has no value for the entity (unavailable, e.g. while the box restarts, or unknown):
+ *  the card then shows it as unavailable, never as a real state (Wi-Fi off, 0 missed calls, offline, RAID OK). */
+const noValue = (s) => !s || s.state === "unavailable" || s.state === "unknown";
 
 const RATE_FACTORS = {
   "b/s": 1, "bit/s": 1 / 8, "kbit/s": 125, "mbit/s": 125e3, "gbit/s": 125e6,
@@ -1560,6 +1580,14 @@ const partitionLabel = (hass, p, fallback = "Disk") =>
 // ---------------------------------------------------------------------------
 
 const BASE_STYLE = `
+  :host { display: block; }
+  /* ha-card is the size container of the width queries: its content gives it no width, so in a parent that sizes to
+     its content (inline-block, grid auto column: button-card, layout-card) the card would fall to a few pixels. This
+     empty, zero-height grid gives the card a natural (max-content) width of 400 px (240 px for the compact mini card)
+     without any minimum (its min-content width is 0): in a "1fr 1fr" grid (grid card, horizontal-stack,
+     layout-card), wrapped in a <div> or not, the card still shrinks to its column. contain-intrinsic-inline-size or a
+     min-width on the host would be a minimum and overflow there. */
+  :host::before { content: ""; display: grid; grid-template-columns: minmax(0, 400px); height: 0; }
   :host { --ibc-red: #cd1e25; --ibc-ok: var(--success-color, #43a047); --ibc-warn: var(--warning-color, #ffa600); --ibc-crit: var(--error-color, #db4437); }
   /* Readable colours: the operator accent and the state colours stay as they are on fills, dots and tints; icons
      and graphics mix 40 % of the theme text colour (3:1), text 50 % (4.5:1). Mixing with --primary-text-color darkens
@@ -1583,9 +1611,14 @@ const BASE_STYLE = `
   @media (prefers-reduced-motion: reduce) { .bar > div { transition: none; } }
   .header { display: flex; align-items: center; gap: 10px; padding: 12px 12px 8px; }
   /* The status pill sits right of the title line, centred on it; the subtitle and chips stay under the title. */
-  .titles { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  /* Narrow cards: the title block shrinks but keeps about 4 characters of the 16 px title (48 px), the box picture
+     gets smaller (hidden up to 340 px on the full card), the status pill truncates its text (only its dot below 245 px) and the icon
+     buttons never shrink. */
+  .titles { flex: 1 1 0; min-width: 48px; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   .titles > * { grid-column: 1; }
-  .titles > .chip { grid-column: 2; grid-row: 1; align-self: center; margin-left: 10px; white-space: nowrap; }
+  .titles > .chip { grid-column: 2; grid-row: 1; align-self: center; margin-left: 10px; white-space: nowrap; min-width: 0; max-width: 100%; }
+  .chip.status { overflow: hidden; }
+  .chip.status .txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .titles .chips { margin-top: 4px; }
   .logo-link { display: flex; align-items: center; justify-content: center; flex: none; align-self: flex-start; width: 40px; height: 40px; border-radius: 10px;
                background: #fff; box-shadow: inset 0 0 0 1px var(--divider-color, rgba(0,0,0,.12)); }
@@ -1597,7 +1630,9 @@ const BASE_STYLE = `
   .sub .parts { display: flex; flex-wrap: wrap; margin-left: -10px; }
   .sub .parts span { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sub .parts span::before { content: "·"; display: inline-block; width: 10px; text-align: center; }
-  .box-link { display: flex; flex: none; max-width: 40%; }
+  /* The box picture gives way before the buttons: it shrinks (object-fit) rather than push them out of the card. */
+  .box-link { display: flex; flex: 0 1 auto; min-width: 0; max-width: 40%; }
+  @container (max-width: 200px) { .box-link { display: none; } }
   .box { height: 48px; width: auto; max-width: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,.25)); }
   .tile { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; min-width: 0;
           background: var(--secondary-background-color, rgba(127,127,127,.08)); }
@@ -1619,6 +1654,8 @@ const BASE_STYLE = `
   .action .icon { width: 16px; height: 16px; }
   .action:hover { background: color-mix(in srgb, var(--ibc-red) 16%, transparent); color: var(--ibc-accent); }
   .action:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 1px; }
+  .action:disabled { cursor: default; opacity: .4; }
+  .action:disabled:hover { background: none; color: var(--secondary-text-color); }
 `;
 
 // In-card confirmation popup, at the top of the card so it stays in view when the card is long.
@@ -1709,7 +1746,7 @@ class InternetBoxBase extends HTMLElement {
   _confirmRestart() {
     const box = discover(this._hass, this._config.box);
     const reboot = box.scalars.reboot;
-    if (!reboot) return;
+    if (!reboot || this._s(reboot)?.state === "unavailable") return;
     this._openDialog({
       body: `<h3>${svgIcon(ICONS.restart)}${esc(this._t("restart"))}</h3>
         <div class="hint">${esc(this._t("restart_confirm"))}</div>`,
@@ -1721,7 +1758,8 @@ class InternetBoxBase extends HTMLElement {
   _openDialog(dialog) {
     this._dialog = dialog;
     this._update();
-    this.shadowRoot.querySelector(".modal .danger")?.focus();
+    // After a re-render: no scroll of the page towards the card.
+    this.shadowRoot.querySelector(".modal .danger")?.focus({ preventScroll: true });
   }
 
   _closeDialog() {
@@ -1745,10 +1783,12 @@ class InternetBoxBase extends HTMLElement {
   }
 
   // Round restart button for the header: shown only when the box exposes a reboot button.
+  // Disabled while the reboot button is unavailable (a button never pressed is "unknown": that is its normal state).
   _restartBtn(box) {
     if (!box.scalars.reboot) return "";
     const label = esc(this._t("restart"));
-    return `<button class="action" data-action="restart" title="${label}" aria-label="${label}">${svgIcon(ICONS.restart)}</button>`;
+    const disabled = this._s(box.scalars.reboot)?.state === "unavailable" ? " disabled" : "";
+    return `<button class="action" data-action="restart" title="${label}" aria-label="${label}"${disabled}>${svgIcon(ICONS.restart)}</button>`;
   }
 
   set hass(hass) {
@@ -1787,12 +1827,14 @@ class InternetBoxBase extends HTMLElement {
     return fmtRate(toBps(this._s(id)), this._hass, this._config);
   }
 
-  // Missed calls sensor, its count and the "mark as read" button (only when there are some), or null without the sensor.
+  // Missed calls sensor, its count (null while unavailable) and the "mark as read" button (only when there are some
+  // and the button is available), or null without the sensor.
   _missedCalls(sc) {
     const missed = this._s(sc.missed);
     if (!missed) return null;
-    const n = num(missed) ?? 0;
-    const markRead = n > 0 && this._s(sc.mark_read);
+    const n = num(missed);
+    const button = this._s(sc.mark_read);
+    const markRead = n > 0 && button?.state !== "unavailable" && button;
     const reset = markRead
       ? `<button class="reset" data-press="${markRead.entity_id}" title="${esc(this._t("mark_read"))}" aria-label="${esc(
           this._t("mark_read")
@@ -1850,9 +1892,12 @@ class InternetBoxBase extends HTMLElement {
     if (!router) return "";
     const online = router.state === "home";
     const type = router.attributes.connection_type;
-    return `<span class="chip status clickable ${online ? "ok" : "crit"}" role="button" tabindex="0" data-entity="${router.entity_id}"><span class="dot"></span>${esc(
-      online ? this._t("online") : this._t("offline")
-    )}${type ? ` · ${esc(String(type).toUpperCase())}` : ""}</span>`;
+    const unknown = noValue(router);
+    const text = unknown ? this._t("unavailable") : `${online ? this._t("online") : this._t("offline")}${type ? ` · ${String(type).toUpperCase()}` : ""}`;
+    // The text is also the tooltip and accessible name: on a narrow card only the coloured dot is shown.
+    return `<span class="chip status clickable ${unknown ? "off" : online ? "ok" : "crit"}" role="button" tabindex="0" data-entity="${
+      router.entity_id
+    }" title="${esc(text)}" aria-label="${esc(text)}"><span class="dot"></span><span class="txt">${esc(text)}</span></span>`;
   }
 
   // Info chips under the title (Wi-Fi state). The Services section (shown unless disabled) already has a Wi-Fi
@@ -1863,9 +1908,10 @@ class InternetBoxBase extends HTMLElement {
     const wifi = this._s(sc.wifi);
     if (wifi && this._config.show_services === false) {
       const on = wifi.state === "on";
+      const text = noValue(wifi) ? `${this._t("wifi")} · ${this._t("unavailable")}` : on ? this._t("wifi_on") : this._t("wifi_off");
       chips.push(
         `<span class="chip clickable ${on ? "ok" : "off"}" role="button" tabindex="0" data-entity="${wifi.entity_id}">${svgIcon(on ? ICONS.wifi : ICONS.wifi_off)}${esc(
-          on ? this._t("wifi_on") : this._t("wifi_off")
+          text
         )}</span>`
       );
     }
@@ -1941,6 +1987,7 @@ const FULL_STYLE = `
                    letter-spacing: .04em; color: var(--secondary-text-color); margin-bottom: 6px; }
   .section-title .icon { width: 16px; height: 16px; }
   .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  @container (max-width: 260px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; }
   .facts { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; margin-top: 6px; }
   .facts > span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
@@ -1961,9 +2008,16 @@ const FULL_STYLE = `
   .part .row { grid-column: 1; grid-row: 1; }
   .part:last-child { margin-bottom: 0; }
   .row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-  .row .grow { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* The partition name is the row's identifier: it keeps 5em, the disk model gives way (ellipsis). */
+  .row .grow { flex: 1 1 auto; min-width: 5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .muted { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .part .bar { margin: 4px 0 0; grid-column: 1 / -1; grid-row: 2; }
   .part .detail { font-size: 11px; color: var(--secondary-text-color); display: flex; justify-content: flex-end; grid-column: 2; grid-row: 1; gap: 8px; }
+  /* Narrow card: used / free under the bar, so the partition name keeps the whole first line. */
+  @container (max-width: 300px) {
+    .part .row { grid-column: 1 / -1; }
+    .part .detail { grid-column: 1 / -1; grid-row: 3; justify-content: space-between; margin-top: 2px; }
+  }
   .tile.svc { --c: var(--secondary-text-color); }
   .tile.svc.ok { --c: var(--ibc-ok); } .tile.svc.warn { --c: var(--ibc-warn); }
   .tiles.svc-row { display: flex; flex-wrap: wrap; }
@@ -1979,15 +2033,31 @@ const FULL_STYLE = `
   @keyframes spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .spin { animation: none; } .ring .value { transition: none; } }
   /* Full card only (and the zoomed mini, which uses this style): its header also carries the status pill and the
-     restart button, so on a narrow card the box picture shrinks to leave room for the title. It always stays
-     visible — never hidden — so the box is shown whenever the card is expanded. The compact mini keeps its full-size
-     picture (MINI_STYLE). */
+     restart button, so on a narrow card the box picture gets smaller to leave room for the title, then is hidden.
+     The compact mini keeps its full-size picture (MINI_STYLE). */
   @container (max-width: 460px) { .box { height: 38px; } }
   @container (max-width: 380px) { .box { height: 32px; } }
+  /* Up to 340 px (9 to 12 columns of a phone section) the title, the status pill under it and the restart button
+     need the whole header: with the picture the title block would be narrower than the whole pill text (up to
+     135 px, "Fuera de línea · FTTH"). */
+  @container (max-width: 340px) { .box-link { display: none; } }
   /* On a narrow full card the status pill would squeeze the title on its line; move it below the title (in the
      first column, under the name) so the title keeps the full width. */
   @container (max-width: 440px) {
     .titles > .chip.status { grid-column: 1; grid-row: auto; align-self: start; justify-self: start; margin: 4px 0 0; }
+  }
+  /* Narrower still (below 9 columns of a phone section): only the pill's coloured dot, back on the title line (its
+     text stays its tooltip and label). */
+  @container (max-width: 244px) {
+    .titles > .chip.status { grid-column: 2; grid-row: 1; align-self: center; justify-self: end; margin: 0 0 0 6px; padding: 5px; }
+    .chip.status .txt { display: none; }
+  }
+  /* At 6 columns of a narrow section: the dot goes to the subtitle line, the title takes the whole first line. */
+  @container (max-width: 200px) {
+    .titles > .name { grid-column: 1 / -1; }
+    .titles > .chip.status { grid-row: 2; }
+    /* The zoomed mini card has both the restart and the detail buttons: the logo gives them its place. */
+    .header:has(.zoom) .logo-link { display: none; }
   }
 `;
 
@@ -2005,8 +2075,9 @@ class InternetBoxCard extends InternetBoxBase {
     return 7;
   }
 
+  // Below 9 columns (about 240 px in a narrow section) the full card's tiles and gauges no longer fit.
   getGridOptions() {
-    return { columns: 12, min_columns: 6 };
+    return { columns: 12, min_columns: 9 };
   }
 
   _render() {
@@ -2092,7 +2163,7 @@ class InternetBoxCard extends InternetBoxBase {
       const used = free === null ? null : Math.max(0, Math.min(100, 100 - free));
       const cls = level(used, 80, 90);
       return `<div class="part clickable ${cls}" role="button" tabindex="0" data-key="${p.id}" data-entity="${p.id}">
-        <div class="row"><span class="dot ${cls || "ok"}"></span><span class="grow">${esc(partitionLabel(this._hass, p, this._t("disk")))}</span>
+        <div class="row"><span class="dot ${used === null ? "off" : cls || "ok"}"></span><span class="grow">${esc(partitionLabel(this._hass, p, this._t("disk")))}</span>
           <span class="muted">${esc(p.device?.model || "")}</span></div>
         <div class="bar"><div style="width:${used ?? 0}%"></div></div>
         <div class="detail"><span>${used === null ? "—" : `${used.toFixed(0)}% ${this._t("used")}`}</span>
@@ -2101,9 +2172,11 @@ class InternetBoxCard extends InternetBoxBase {
     });
     for (const id of box.raids) {
       const degraded = this._s(id)?.state === "on";
-      rows.push(`<div class="row clickable" role="button" tabindex="0" data-key="${id}" data-entity="${id}"><span class="dot ${degraded ? "crit" : "ok"}"></span>
+      const cls = noValue(this._s(id)) ? "off" : degraded ? "crit" : "ok";
+      const text = cls === "off" ? "unavailable" : degraded ? "raid_degraded" : "raid_ok";
+      rows.push(`<div class="row clickable" role="button" tabindex="0" data-key="${id}" data-entity="${id}"><span class="dot ${cls}"></span>
         <span class="grow">${esc(shortName(this._hass, id, box.device))}</span>
-        <span class="chip ${degraded ? "crit" : "ok"}">${this._t(degraded ? "raid_degraded" : "raid_ok")}</span></div>`);
+        <span class="chip ${cls}">${this._t(text)}</span></div>`);
     }
     if (!rows.length) return "";
     return `<div><div class="section-title">${svgIcon(ICONS.database)}${this._t("storage")}</div>${rows.join("")}</div>`;
@@ -2115,24 +2188,32 @@ class InternetBoxCard extends InternetBoxBase {
     const wifi = this._s(sc.wifi);
     if (wifi) {
       const on = wifi.state === "on";
-      tiles.push(`<div class="tile svc clickable ${on ? "ok" : ""}" role="button" tabindex="0" data-key="${wifi.entity_id}" data-entity="${wifi.entity_id}">${svgIcon(
-        on ? ICONS.wifi : ICONS.wifi_off
-      )}<div><div class="k">${this._t("wifi")}</div><div class="v">${this._t(on ? "on" : "off")}</div></div></div>`);
+      const unknown = noValue(wifi);
+      tiles.push(`<div class="tile svc clickable ${on ? "ok" : unknown ? "off" : ""}" role="button" tabindex="0" data-key="${wifi.entity_id}" data-entity="${
+        wifi.entity_id
+      }">${svgIcon(on || unknown ? ICONS.wifi : ICONS.wifi_off)}<div><div class="k">${this._t("wifi")}</div><div class="v">${this._t(
+        unknown ? "unavailable" : on ? "on" : "off"
+      )}</div></div></div>`);
     }
     const calls = this._missedCalls(sc);
     if (calls) {
       const { missed, n, reset } = calls;
       // The keyboard target is the label, not the whole tile: the "mark as read" button must not sit inside
       // a role="button" element. A click anywhere on the tile still opens the more-info dialog (data-entity).
-      tiles.push(`<div class="tile svc clickable ${n > 0 ? "warn" : ""}" data-key="${missed.entity_id}" data-entity="${missed.entity_id}">${svgIcon(
-        n > 0 ? ICONS.phone_missed : ICONS.phone
-      )}<div role="button" tabindex="0"><div class="k">${this._t("calls")}</div><div class="v">${n} ${this._tn("missed", n)}</div></div>${reset}</div>`);
+      const value = n === null ? this._t("unavailable") : `${n} ${this._tn("missed", n)}`;
+      tiles.push(`<div class="tile svc clickable ${n > 0 ? "warn" : n === null ? "off" : ""}" data-key="${missed.entity_id}" data-entity="${
+        missed.entity_id
+      }">${svgIcon(n > 0 ? ICONS.phone_missed : ICONS.phone)}<div role="button" tabindex="0"><div class="k">${this._t(
+        "calls"
+      )}</div><div class="v">${value}</div></div>${reset}</div>`);
     }
     if (box.trackers.length) {
-      const home = box.trackers.filter((id) => this._s(id)?.state === "home").length;
-      tiles.push(`<div class="tile svc ok" data-key="devices"><span>${svgIcon(ICONS.devices)}</span><div><div class="k">${this._t(
+      // Unavailable / unknown trackers are left out of the count; when none is known, the tile says so.
+      const known = box.trackers.filter((id) => !noValue(this._s(id)));
+      const home = known.filter((id) => this._s(id).state === "home").length;
+      tiles.push(`<div class="tile svc ${known.length ? "ok" : "off"}" data-key="devices"><span>${svgIcon(ICONS.devices)}</span><div><div class="k">${this._t(
         "devices_short"
-      )}</div><div class="v">${home} / ${box.trackers.length}</div></div></div>`);
+      )}</div><div class="v">${known.length ? `${home} / ${known.length}` : this._t("unavailable")}</div></div></div>`);
     }
     if (!tiles.length) return "";
     return `<div><div class="section-title">${svgIcon(ICONS.services)}${this._t("services")}</div><div class="tiles svc-row">${tiles.join(
@@ -2146,13 +2227,17 @@ class InternetBoxCard extends InternetBoxBase {
 // ---------------------------------------------------------------------------
 
 const MINI_STYLE = `
+  :host::before { grid-template-columns: minmax(0, 240px); }
   .logo-link { width: 32px; height: 32px; border-radius: 8px; }
   .logo { width: 26px; }
   .box-link { max-width: 35%; }
   .box { height: 44px; }
+  @container (max-width: 260px) { .box { height: 28px; } }
   .name { font-size: 16px; }
   .content { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
   .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  /* Too narrow for two rates side by side: one under the other. */
+  @container (max-width: 260px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
   .tile { padding: 6px 8px; gap: 8px; }
   .tile .v { font-size: 14px; }
   .foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 8px; font-size: 12px;
@@ -2184,7 +2269,8 @@ class InternetBoxMiniCard extends InternetBoxCard {
       ev.stopPropagation();
       this._zoom(!this._zoomed);
       // Keyboard use (Enter / Space: no click count) keeps the focus on the button of the new view.
-      if (ev.detail === 0) this.shadowRoot.querySelector(".zoom")?.focus();
+      // The button is a new element after the re-render: moving the focus to it must not scroll the page.
+      if (ev.detail === 0) this.shadowRoot.querySelector(".zoom")?.focus({ preventScroll: true });
     });
     this._onOutside = (ev) => {
       const path = ev.composedPath();
@@ -2244,9 +2330,11 @@ class InternetBoxMiniCard extends InternetBoxCard {
     const router = this._s(sc.router);
     if (router) {
       const online = router.state === "home";
-      foot.push(`<span class="clickable ${online ? "ok" : "crit"}" role="button" tabindex="0" data-key="router" data-entity="${router.entity_id}"><span class="dot"></span>&nbsp;${esc(
-        String(router.attributes.connection_type || this._t(online ? "online" : "offline")).toUpperCase()
-      )}</span>`);
+      const unknown = noValue(router);
+      const text = unknown ? this._t("unavailable") : String(router.attributes.connection_type || this._t(online ? "online" : "offline")).toUpperCase();
+      foot.push(`<span class="clickable ${unknown ? "off" : online ? "ok" : "crit"}" role="button" tabindex="0" data-key="router" data-entity="${
+        router.entity_id
+      }"><span class="dot"></span>&nbsp;${esc(text)}</span>`);
     }
     if (c.show_system !== false && box.temps.length) {
       let hottest = null;
@@ -2260,19 +2348,25 @@ class InternetBoxMiniCard extends InternetBoxCard {
         )}${esc(hottest.unit)}</span>`);
     }
     const wifi = this._s(sc.wifi);
-    if (wifi)
-      foot.push(`<span class="clickable ${wifi.state === "on" ? "ok" : ""}" role="button" tabindex="0" data-key="${wifi.entity_id}" data-entity="${wifi.entity_id}">${svgIcon(
-        wifi.state === "on" ? ICONS.wifi : ICONS.wifi_off
-      )}${this._t("wifi")}</span>`);
+    if (wifi) {
+      // Unavailable: a neutral Wi-Fi icon and "—", the state in the tooltip and accessible name.
+      const on = wifi.state === "on";
+      const unknown = noValue(wifi);
+      const label = unknown ? ` title="${esc(`${this._t("wifi")} · ${this._t("unavailable")}`)}" aria-label="${esc(`${this._t("wifi")} · ${this._t("unavailable")}`)}"` : "";
+      foot.push(`<span class="clickable ${on ? "ok" : unknown ? "off" : ""}" role="button" tabindex="0" data-key="${wifi.entity_id}" data-entity="${
+        wifi.entity_id
+      }"${label}>${svgIcon(on || unknown ? ICONS.wifi : ICONS.wifi_off)}${this._t("wifi")}${unknown ? " —" : ""}</span>`);
+    }
     // Missed calls, always shown when the box reports them: in orange with "mark as read" when there are some,
     // plain at 0, as on the Calls tile of the full card.
     const calls = this._missedCalls(sc);
     if (calls) {
       const { missed, n, reset } = calls;
       // Same as the tile of the full card: the "mark as read" button stays outside the role="button" element.
-      foot.push(`<span class="clickable ${n > 0 ? "warn" : ""}" data-key="${missed.entity_id}" data-entity="${missed.entity_id}" title="${esc(
-        `${this._t("calls")} · ${n} ${this._tn("missed", n)}`
-      )}"><span role="button" tabindex="0">${svgIcon(n > 0 ? ICONS.phone_missed : ICONS.phone)}${n}</span>${reset}</span>`);
+      const label = `${this._t("calls")} · ${n === null ? this._t("unavailable") : `${n} ${this._tn("missed", n)}`}`;
+      foot.push(`<span class="clickable ${n > 0 ? "warn" : n === null ? "off" : ""}" data-key="${missed.entity_id}" data-entity="${missed.entity_id}" title="${esc(
+        label
+      )}"><span role="button" tabindex="0" aria-label="${esc(label)}">${svgIcon(n > 0 ? ICONS.phone_missed : ICONS.phone)}${n ?? "—"}</span>${reset}</span>`);
     }
     const up = this._uptime(router);
     if (up !== null) foot.push(`<span data-key="uptime">${svgIcon(ICONS.timer)}${fmtUptime(up, this._hass, this._config)}</span>`);
