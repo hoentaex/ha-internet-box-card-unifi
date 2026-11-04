@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.1 - 2026-11-04
+
+### New
+- Added Romanian, Danish, Swedish, Bulgarian, Russian, Ukrainian, Hungarian, Slovak, Czech, Slovenian, Latvian and Greek translations: `ro`, `da`, `sv`, `bg`, `ru`, `uk`, `hu`, `sk`, `cs`, `sl`, `lv` and `el`, picked automatically from the Home Assistant language and offered in the visual editor.
+- The missed calls agree with the count in the new languages that have a singular or dual form ("1 непринятый", "2 zgrešena", "1 αναπάντητη"…); Hungarian keeps a single form.
+- Partition names: the "free space" words of the core Freebox integration are also stripped in Swedish, Hungarian, Slovak and Czech.
+
+### Maintenance
+- Tests for the language resolution of the new languages, their editor labels, their missed-call forms and partition names, and, in Chromium, the header and status pill of the longest new translations (Greek, Bulgarian, Ukrainian, Slovenian) at the narrowest widths.
+
 ## 2.2.0 - 2026-11-03
 
 ### Features
