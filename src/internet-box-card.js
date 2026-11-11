@@ -3886,6 +3886,8 @@ const FULL_STYLE = `
   .gauge.use .val { flex-direction: column; }
   .lats { margin-top: 6px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
   .tile.lat { --c: var(--accent-color, #ff9800); }
+  .lats.speed { margin-top: 0; }
+  .section-title .when { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; }
   .ring { width: 52px; height: 52px; transform: rotate(-90deg); }
   .ring circle { fill: none; stroke-width: 6; }
   .ring .track { stroke: var(--divider-color, rgba(127,127,127,.25)); }
@@ -3979,6 +3981,7 @@ class InternetBoxCard extends InternetBoxBase {
     const parts = [];
     const hist = this._fullHistory(box);
     if (c.show_network !== false) parts.push(this._network(box, hist));
+    if (c.show_speedtest !== false) parts.push(this._speedtest(hist));
     if (c.show_system !== false) parts.push(this._system(box, hist));
     if (c.show_storage !== false) parts.push(this._storage(box));
     if (c.show_services !== false) parts.push(this._services(box));
@@ -3998,6 +4001,7 @@ class InternetBoxCard extends InternetBoxBase {
     const ids = [
       ...(c.show_network !== false ? [sc.rate_down, sc.rate_up, ...this._latencies(box).map((x) => x.id)] : []),
       ...(c.show_system !== false ? [sc.cpu, sc.ram] : []),
+      ...(c.show_speedtest !== false ? Object.values(discoverSpeedtest(this._hass) || {}) : []),
     ].filter(Boolean);
     return ids.length ? this._history(ids) : null;
   }
@@ -4036,23 +4040,6 @@ class InternetBoxCard extends InternetBoxBase {
           this._config
         )}</span>`
       );
-    const sp = this._config.show_speedtest !== false ? discoverSpeedtest(this._hass) : null;
-    if (sp) {
-      const dl = this._s(sp.download);
-      const ul = this._s(sp.upload);
-      const ping = Number.parseFloat(this._s(sp.ping)?.state);
-      const parts = [
-        dl ? `↓ ${fmtRate(toBps(dl), this._hass, this._config)}` : "",
-        ul ? `↑ ${fmtRate(toBps(ul), this._hass, this._config)}` : "",
-        Number.isFinite(ping) ? `${Math.round(ping)} ms` : "",
-      ].filter(Boolean);
-      const when = (dl || ul)?.last_changed;
-      facts.push(
-        `<span class="clickable speedtest" role="button" tabindex="0" data-entity="${sp.download || sp.upload}" title="${esc(
-          `${this._t("speedtest")}${when ? ` · ${new Date(when).toLocaleString(numLang(this._hass, this._config))}` : ""}`
-        )}">${svgIcon(ICONS.speedtest)}${esc(parts.join(" · "))}</span>`
-      );
-    }
     // WAN latency tiles (UniFi gateway), each with its last 24 hours.
     const lat = this._latencies(box).map(({ id, name, label }) => {
       const v = num(this._s(id));
@@ -4067,6 +4054,37 @@ class InternetBoxCard extends InternetBoxBase {
       ${rates ? `<div class="grid2">${this._rateTiles(sc, hist)}</div>` : ""}
       ${lat.length ? `<div class="tiles lats">${lat.join("")}</div>` : ""}
       ${facts.length ? `<div class="facts">${facts.join("")}</div>` : ""}
+    </div>`;
+  }
+
+  // The last Speedtest.net test, a section of its own: download, upload and ping tiles, each with the results of the
+  // last 24 hours behind it; the time of the test next to the title.
+  _speedtest(hist = null) {
+    const sp = discoverSpeedtest(this._hass);
+    if (!sp) return "";
+    const dl = this._s(sp.download);
+    const ul = this._s(sp.upload);
+    const ping = this._s(sp.ping);
+    const tile = (s, cls, icon, k, v) =>
+      s
+        ? `<div class="tile ${cls} clickable" role="button" tabindex="0" data-key="${s.entity_id}" data-entity="${s.entity_id}">${spark(hist?.[s.entity_id], hist?.end)}${svgIcon(
+            icon
+          )}<div><div class="k">${k}</div><div class="v">${noValue(s) ? "—" : v}</div></div></div>`
+        : "";
+    const pingMs = num(ping);
+    const tiles = [
+      tile(dl, "down", ICONS.down, this._t("download"), dl && fmtRate(toBps(dl), this._hass, this._config)),
+      tile(ul, "up", ICONS.up, this._t("upload"), ul && fmtRate(toBps(ul), this._hass, this._config)),
+      tile(ping, "lat", ICONS.timer, "Ping", pingMs === null ? "—" : `${Math.round(pingMs)} ms`),
+    ].filter(Boolean);
+    if (!tiles.length) return "";
+    const when = [dl, ul, ping].find((s) => s && !noValue(s))?.last_changed;
+    const at = when
+      ? new Date(when).toLocaleString(numLang(this._hass, this._config), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+      : "";
+    return `<div>
+      <div class="section-title">${svgIcon(ICONS.speedtest)}${this._t("speedtest")}${at ? `<span class="when">${esc(at)}</span>` : ""}</div>
+      <div class="tiles lats speed">${tiles.join("")}</div>
     </div>`;
   }
 

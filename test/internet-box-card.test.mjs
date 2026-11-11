@@ -898,7 +898,7 @@ test("Wi-Fi switch: turns the Wi-Fi on at once, off only after the confirmation 
   assert.deepEqual(calls, []);
 });
 
-test("the last Speedtest.net test is a fact of the network section, hidden with show_speedtest: false", async () => {
+test("the last Speedtest.net test is a section of its own (download, upload, ping tiles), hidden with show_speedtest: false", async () => {
   const el = await mockCard({});
   const add = (id, key, state, unit) => {
     el._hass.entities[id] = { entity_id: id, platform: "speedtestdotnet", translation_key: key };
@@ -907,11 +907,16 @@ test("the last Speedtest.net test is a fact of the network section, hidden with 
   add("sensor.speedtest_download", "download", "845.2", "Mbit/s");
   add("sensor.speedtest_upload", "upload", "512", "Mbit/s");
   add("sensor.speedtest_ping", "ping", "9.4", "ms");
-  const html = el._network({ scalars: { router: ROUTER_ID } });
-  assert.match(html, /class="clickable speedtest" role="button" tabindex="0" data-entity="sensor\.speedtest_download"/);
-  assert.match(html, /↓ 106 MB\/s · ↑ 64\.0 MB\/s · 9 ms/);
-  el._config = { ...el._config, show_speedtest: false };
   assert.doesNotMatch(el._network({ scalars: { router: ROUTER_ID } }), /speedtest/);
+  const html = el._speedtest();
+  assert.match(html, /class="section-title">.*Speed test<span class="when">/);
+  assert.match(html, /tile down clickable[^>]*data-entity="sensor\.speedtest_download"[\s\S]*?<div class="v">106 MB\/s<\/div>/);
+  assert.match(html, /tile up clickable[^>]*data-entity="sensor\.speedtest_upload"[\s\S]*?<div class="v">64\.0 MB\/s<\/div>/);
+  assert.match(html, /tile lat clickable[^>]*data-entity="sensor\.speedtest_ping"[\s\S]*?<div class="v">9 ms<\/div>/);
+  el._config = { ...el._config, rate_unit: "bits" };
+  assert.match(el._speedtest(), /845 Mb\/s/);
+  el._config = { ...el._config, show_speedtest: false };
+  assert.doesNotMatch(el._render(), /speedtest/);
 });
 
 // A device of another integration linked to the router (FRITZ!Box Tools links network clients, a NAS merged by its

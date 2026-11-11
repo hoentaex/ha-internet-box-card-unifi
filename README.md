@@ -13,7 +13,7 @@ Fork of [ha-internet-box-card](https://github.com/juju35/ha-internet-box-card) b
 | WAN latency, with its 24 h curve | the gateway's WAN latency sensors (Google, Cloudflare, Microsoft; disabled by default), one tile each |
 | Restart button | the gateway's restart button (not the PoE power cycle buttons) |
 | Connected devices | the integration's client trackers |
-| Last speed test | the [Speedtest.net](https://www.home-assistant.io/integrations/speedtestdotnet/) integration, when set up |
+| Speed test section: download, upload and ping, with their 24 h curve | the [Speedtest.net](https://www.home-assistant.io/integrations/speedtestdotnet/) integration, when set up |
 | Download / upload, 24 h curve | the gateway's WAN port bandwidth sensors, see below |
 
 The gateway picture follows its form factor: a rack unit (Dream Machine Pro / SE / Pro Max), a desktop box (Cloud Gateway Ultra / Max / Fiber, Express) or a cylinder (Dream Machine, Dream Router); set the `model` option to pick another one.
@@ -32,7 +32,9 @@ The UniFi Network integration has no WAN throughput sensor of its own; the port 
 2. Open the gateway device and enable the **RX** and **TX** sensors of its WAN port (they are disabled by default), for example `Port 9` on a Dream Machine Pro, or `SFP+ 1` when the line is on that port.
 3. If you enable the bandwidth sensors of other ports too, name the WAN port "WAN" in the UniFi controller: the card prefers the port whose name contains "WAN", else it takes the first port with enabled sensors.
 
-RX is the download, TX the upload. Without these sensors the network section shows the last speed test only.
+RX is the download, TX the upload.
+
+The rates are shown in bytes (MB/s) by default; set `rate_unit: bits` (or **Rate unit: bits** in the card editor) to read them in Mbit/s, as the speed test and the internet providers give them.
 
 ### Installation (HACS)
 

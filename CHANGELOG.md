@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0-unifi.3 - 2026-11-11
+
+### Features
+- The last Speedtest.net test is a section of its own, under the network one: a download, an upload and a ping tile, each with the test results of the last 24 hours behind it, and the time of the test next to the title (`show_speedtest: false` hides it). It was a line under the network tiles before.
+
 ## 3.1.0-unifi.2 - 2026-11-11
 
 ### Features
