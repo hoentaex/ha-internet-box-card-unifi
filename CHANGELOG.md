@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.1.0-unifi.2 - 2026-11-11
+
+### Features
+- UniFi gateway CPU and RAM use: a gauge each, next to the temperatures in the System section, with its last 24 hours drawn behind it on a 0-100 % scale. They turn orange / red from 80 / 95 % (CPU) and 85 / 95 % (RAM), options `cpu_warning`, `cpu_critical`, `ram_warning`, `ram_critical`.
+- WAN latency tiles in the Network section, one per monitored target (Google, Cloudflare, Microsoft) and WAN, each with its last 24 hours; a WAN without value (no second line) has no tile. The latency sensors are disabled by default in the UniFi Network integration.
+- Pictures of the UniFi gateways, drawn by form factor: a rack unit (Dream Machine Pro / SE / Pro Max, Next-Gen Gateway), a desktop box (Cloud Gateway Ultra / Max / Fiber, Express, Security Gateway) and a cylinder (Dream Machine, Dream Router).
+
 ## 3.1.0-unifi.1 - 2026-11-11
 
 ### Features

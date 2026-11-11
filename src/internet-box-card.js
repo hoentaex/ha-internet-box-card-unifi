@@ -485,7 +485,61 @@ const genDishSvg = ({ accent } = {}) => {
   s += `<rect x="104" y="28" width="92" height="76" rx="11" fill="none" stroke="#000" stroke-opacity=".07"/></g>`;
   return svgDoc(300, 176, defs, s);
 };
-const GENERIC = { generic_router: genRouterSvg, generic_hub: genHubSvg, generic_tower: genTowerSvg, generic_mobile: genMobileSvg, generic_dish: genDishSvg };
+// UniFi gateways, drawn as their form factor (never a copy of the product): a 1U rack unit with a small screen, its
+// ports and SFP cages (Dream Machine Pro / SE / Pro Max, rack gateways); a small white desktop box with a screen
+// (Cloud Gateway Ultra / Max / Fiber, Express, Security Gateway); a white cylinder with its light ring (Dream Machine,
+// Dream Router). The status lights take the accent colour.
+const unifiRackSvg = ({ accent } = {}) => {
+  const w = 252;
+  const h = 40;
+  const x = (300 - w) / 2;
+  const top = 64;
+  const led = accent || "#3b8cff";
+  const defs = grad("urkb", [[0, "#d9dce1"], [0.5, "#b9bec6"], [1, "#9aa0a9"]]) + grad("urks", [[0, "#1a2433"], [1, "#0b1018"]]);
+  let s = `<ellipse cx="150" cy="${top + h + 10}" rx="${Math.round(w * 0.5)}" ry="6" opacity=".25"/>`;
+  s += `<rect x="${x}" y="${top}" width="${w}" height="${h}" rx="4" fill="url(#urkb)"/>`;
+  s += `<rect x="${x + 2}" y="${top + 2}" width="${w - 4}" height="2" rx="1" fill="#fff" opacity=".5"/>`;
+  // Screen, ports in one row, SFP cages, vent slots.
+  s += `<rect x="${x + 12}" y="${top + 8}" width="34" height="24" rx="3" fill="url(#urks)"/>`;
+  s += `<rect x="${x + 16}" y="${top + 13}" width="14" height="2.5" rx="1" fill="${led}" opacity=".9"/><rect x="${x + 16}" y="${top + 19}" width="22" height="2" rx="1" fill="#fff" opacity=".35"/>`;
+  for (let i = 0; i < 8; i++) {
+    const px = x + 58 + i * 15;
+    s += `<rect x="${px}" y="${top + 13}" width="12" height="14" rx="1.5" fill="#2a2f37"/><rect x="${px + 2}" y="${top + 9}" width="3" height="2" rx="1" fill="${i < 5 ? led : "#7d838c"}"/>`;
+  }
+  for (let i = 0; i < 2; i++) s += `<rect x="${x + 184 + i * 22}" y="${top + 14}" width="18" height="12" rx="1.5" fill="#20252c"/>`;
+  for (let i = 0; i < 3; i++) s += `<rect x="${x + w - 14}" y="${top + 11 + i * 7}" width="6" height="3" rx="1.5" fill="#7d838c" opacity=".6"/>`;
+  return svgDoc(300, 160, defs, s);
+};
+const unifiCompactSvg = ({ accent } = {}) => {
+  const w = 132;
+  const h = 70;
+  const x = (300 - w) / 2;
+  const top = 52;
+  const led = accent || "#3b8cff";
+  const defs = grad("ucpb", [[0, "#fbfbfc"], [1, "#d5d8dd"]]) + grad("ucps", [[0, "#1a2433"], [1, "#0b1018"]]);
+  let s = `<ellipse cx="150" cy="${top + h + 8}" rx="${Math.round(w * 0.55)}" ry="7" opacity=".25"/>`;
+  s += `<rect x="${x}" y="${top}" width="${w}" height="${h}" rx="14" fill="url(#ucpb)"/>`;
+  s += `<rect x="${x + 6}" y="${top + 3}" width="${w - 12}" height="3" rx="1.5" fill="#fff" opacity=".9"/>`;
+  s += `<rect x="${x + 16}" y="${top + 18}" width="44" height="30" rx="4" fill="url(#ucps)"/>`;
+  s += `<rect x="${x + 21}" y="${top + 25}" width="20" height="3" rx="1.5" fill="${led}"/><rect x="${x + 21}" y="${top + 33}" width="30" height="2.5" rx="1.2" fill="#fff" opacity=".35"/><rect x="${x + 21}" y="${top + 39}" width="24" height="2.5" rx="1.2" fill="#fff" opacity=".25"/>`;
+  s += `<rect x="${x + 16}" y="${top + h - 10}" width="${w - 32}" height="2.5" rx="1.2" fill="${led}" opacity=".85"/>`;
+  return svgDoc(300, 160, defs, s);
+};
+const unifiCylinderSvg = ({ accent } = {}) => {
+  const w = 84;
+  const x = (300 - w) / 2;
+  const top = 18;
+  const bottom = 136;
+  const led = accent || "#3b8cff";
+  const defs = grad("ucyb", [[0, "#c9ccd2"], [0.35, "#fbfbfc"], [0.7, "#eceef1"], [1, "#b9bdc4"]], 1, 0);
+  let s = `<ellipse cx="150" cy="${bottom + 6}" rx="${Math.round(w * 0.62)}" ry="7" opacity=".25"/>`;
+  s += `<rect x="${x}" y="${top}" width="${w}" height="${bottom - top}" rx="18" fill="url(#ucyb)"/>`;
+  s += `<ellipse cx="150" cy="${top + 10}" rx="${w / 2 - 8}" ry="5" fill="#2a2f37" opacity=".85"/>`;
+  s += `<ellipse cx="150" cy="${top + 10}" rx="${w / 2 - 12}" ry="3" fill="none" stroke="${led}" stroke-width="2"/>`;
+  for (let i = 0; i < 4; i++) s += `<rect x="${x + 16}" y="${bottom - 52 + i * 9}" width="${w - 32}" height="2" rx="1" fill="#9aa0a9" opacity=".35"/>`;
+  return svgDoc(300, 160, defs, s);
+};
+const GENERIC = { unifi_rack: unifiRackSvg, unifi_compact: unifiCompactSvg, unifi_cylinder: unifiCylinderSvg, generic_router: genRouterSvg, generic_hub: genHubSvg, generic_tower: genTowerSvg, generic_mobile: genMobileSvg, generic_dish: genDishSvg };
 
 const svgUri = (svg) => `data:image/svg+xml,${encodeURIComponent(svg)}`;
 // Pictures of the box models, by picture id: a model's `pic`, else its own id (Freebox, Livebox, SFR Box, Bbox drawings,
@@ -512,6 +566,9 @@ const IMG_BOX = {
   generic_tower: svgUri(genTowerSvg()),
   generic_mobile: svgUri(genMobileSvg()),
   generic_dish: svgUri(genDishSvg()),
+  unifi_rack: svgUri(unifiRackSvg()),
+  unifi_compact: svgUri(unifiCompactSvg()),
+  unifi_cylinder: svgUri(unifiCylinderSvg()),
 };
 /** Picture of a model: its shared `pic` drawing, else the drawing named after it. A generic form factor is drawn in
  *  the provider's accent colour when one is given (status lights and trim), each variant built once. */
@@ -532,6 +589,9 @@ const FREE_URL = "https://www.free.fr";
 const ADMIN_URL = "https://mafreebox.freebox.fr";
 
 const ICONS = {
+  // mdi:cpu-64-bit / mdi:memory, for the UniFi gateway CPU and RAM gauges.
+  cpu: "M6,4H18V5H21V7H18V9H21V11H18V13H21V15H18V17H21V19H18V20H6V19H3V17H6V15H3V13H6V11H3V9H6V7H3V5H6V4M11,15V18H12V15H11M13,15V18H14V15H13M15,15V18H16V15H15Z",
+  ram: "M17,17H7V7H17M21,11V9H19V7C19,5.89 18.1,5 17,5H15V3H13V5H11V3H9V5H7C5.89,5 5,5.89 5,7V9H3V11H5V13H3V15H5V17A2,2 0 0,0 7,19H9V21H11V19H13V21H15V19H17A2,2 0 0,0 19,17V15H21V13H19V11M13,13H11V11H13M15,9H9V15H15V9Z",
   down: "M9,4H15V12H19.84L12,19.84L4.16,12H9V4Z",
   up: "M15,20H9V12H4.16L12,4.16L19.84,12H15V20Z",
   temp: "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z",
@@ -584,6 +644,8 @@ const STRINGS = {
     calls: "Calls",
     missed: "missed",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "used",
     free: "free",
     raid_ok: "OK",
@@ -659,6 +721,8 @@ const STRINGS = {
     missed: "manqués",
     missed_one: "manqué",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "utilisés",
     free: "libres",
     raid_ok: "OK",
@@ -732,6 +796,8 @@ const STRINGS = {
     calls: "Anrufe",
     missed: "verpasst",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "belegt",
     free: "frei",
     raid_ok: "OK",
@@ -806,6 +872,8 @@ const STRINGS = {
     missed: "perdidas",
     missed_one: "perdida",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "usado",
     free: "libre",
     raid_ok: "OK",
@@ -881,6 +949,8 @@ const STRINGS = {
     missed_one: "пропуштен",
     missed_few: "пропуштена",
     temperature: "Темп.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "искоришћено",
     free: "слободно",
     raid_ok: "У реду",
@@ -956,6 +1026,8 @@ const STRINGS = {
     missed_one: "propušten",
     missed_few: "propuštena",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "iskorišćeno",
     free: "slobodno",
     raid_ok: "U redu",
@@ -1030,6 +1102,8 @@ const STRINGS = {
     missed: "perse",
     missed_one: "persa",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "usato",
     free: "libero",
     raid_ok: "OK",
@@ -1103,6 +1177,8 @@ const STRINGS = {
     calls: "Oproepen",
     missed: "gemist",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "gebruikt",
     free: "vrij",
     raid_ok: "OK",
@@ -1177,6 +1253,8 @@ const STRINGS = {
     missed: "perdidas",
     missed_one: "perdida",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "usado",
     free: "livre",
     raid_ok: "OK",
@@ -1253,6 +1331,8 @@ const STRINGS = {
     missed_few: "nieodebrane",
     missed_many: "nieodebranych",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "zajęte",
     free: "wolne",
     raid_ok: "OK",
@@ -1327,6 +1407,8 @@ const STRINGS = {
     missed: "pierdute",
     missed_one: "pierdut",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "utilizat",
     free: "liber",
     raid_ok: "OK",
@@ -1401,6 +1483,8 @@ const STRINGS = {
     missed: "ubesvarede",
     missed_one: "ubesvaret",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "brugt",
     free: "ledig",
     raid_ok: "OK",
@@ -1475,6 +1559,8 @@ const STRINGS = {
     missed: "missade",
     missed_one: "missat",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "använt",
     free: "ledigt",
     raid_ok: "OK",
@@ -1549,6 +1635,8 @@ const STRINGS = {
     missed: "пропуснати",
     missed_one: "пропуснато",
     temperature: "Темп.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "заето",
     free: "свободно",
     raid_ok: "Наред",
@@ -1623,6 +1711,8 @@ const STRINGS = {
     missed: "непринятых",
     missed_one: "непринятый",
     temperature: "Темп.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "занято",
     free: "свободно",
     raid_ok: "Норма",
@@ -1698,6 +1788,8 @@ const STRINGS = {
     missed_one: "пропущений",
     missed_few: "пропущені",
     temperature: "Темп.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "зайнято",
     free: "вільно",
     raid_ok: "Норма",
@@ -1771,6 +1863,8 @@ const STRINGS = {
     calls: "Hívások",
     missed: "nem fogadott",
     temperature: "Hőm.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "foglalt",
     free: "szabad",
     raid_ok: "OK",
@@ -1846,6 +1940,8 @@ const STRINGS = {
     missed_one: "zmeškaný",
     missed_few: "zmeškané",
     temperature: "Tepl.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "obsadené",
     free: "voľné",
     raid_ok: "OK",
@@ -1921,6 +2017,8 @@ const STRINGS = {
     missed_one: "zmeškaný",
     missed_few: "zmeškané",
     temperature: "Tepl.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "obsazeno",
     free: "volno",
     raid_ok: "OK",
@@ -1997,6 +2095,8 @@ const STRINGS = {
     missed_two: "zgrešena",
     missed_few: "zgrešeni",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "zasedeno",
     free: "prosto",
     raid_ok: "V redu",
@@ -2071,6 +2171,8 @@ const STRINGS = {
     missed: "neatbildēti",
     missed_one: "neatbildēts",
     temperature: "Temp.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "aizņemts",
     free: "brīvs",
     raid_ok: "Labi",
@@ -2145,6 +2247,8 @@ const STRINGS = {
     missed: "αναπάντητες",
     missed_one: "αναπάντητη",
     temperature: "Θερμ.",
+    cpu: "CPU",
+    ram: "RAM",
     used: "σε χρήση",
     free: "ελεύθερο",
     raid_ok: "Εντάξει",
@@ -2407,22 +2511,22 @@ const OPERATORS = {
     website: "https://unifi.ui.com", admin: "https://unifi.ui.com",
     gateway: /^(udm|udr|udw|ucg|uxg|usg|ugw|efg|ux\d*$)/i, gatewayKeys: ["wan_latency"],
     models: [
-      { id: "unifi_udm_pro_max", name: "Dream Machine Pro Max", re: /\budm\s*-?\s*pro\s*-?\s*max|udma6a8/i, pic: "generic_tower" },
-      { id: "unifi_udm_pro_se", name: "Dream Machine Pro SE", re: /\budm\s*-?\s*pro\s*-?\s*se|udmprose/i, pic: "generic_tower" },
-      { id: "unifi_udm_pro", name: "Dream Machine Pro", re: /\budm\s*-?\s*pro/i, pic: "generic_tower" },
-      { id: "unifi_udm_se", name: "Dream Machine SE", re: /\budm\s*-?\s*se/i, pic: "generic_tower" },
-      { id: "unifi_cloud_gateway_ultra", name: "Cloud Gateway Ultra", re: /\budrult|\bucg\s*-?\s*ultra/i, pic: "generic_router" },
-      { id: "unifi_cloud_gateway_max", name: "Cloud Gateway Max", re: /\bucg\s*-?\s*max/i, pic: "generic_router" },
-      { id: "unifi_cloud_gateway_fiber", name: "Cloud Gateway Fiber", re: /\bucg\s*-?\s*f/i, pic: "generic_router" },
-      { id: "unifi_dream_router", name: "Dream Router", re: /\budr/i, pic: "generic_hub" },
-      { id: "unifi_dream_wall", name: "Dream Wall", re: /\budw/i, pic: "generic_hub" },
-      { id: "unifi_udm", name: "Dream Machine", re: /\budm/i, pic: "generic_hub" },
-      { id: "unifi_express", name: "UniFi Express", re: /\bux\d*\b/i, pic: "generic_hub" },
-      { id: "unifi_next_gen_gateway", name: "Next-Gen Gateway", re: /\buxg/i, pic: "generic_router" },
-      { id: "unifi_security_gateway", name: "Security Gateway", re: /\b(usg|ugw)/i, pic: "generic_router" },
-      { id: "unifi_gateway", name: "UniFi Gateway", re: /./, pic: "generic_router", fromDevice: true },
+      { id: "unifi_udm_pro_max", name: "Dream Machine Pro Max", re: /\budm\s*-?\s*pro\s*-?\s*max|udma6a8/i, pic: "unifi_rack" },
+      { id: "unifi_udm_pro_se", name: "Dream Machine Pro SE", re: /\budm\s*-?\s*pro\s*-?\s*se|udmprose/i, pic: "unifi_rack" },
+      { id: "unifi_udm_pro", name: "Dream Machine Pro", re: /\budm\s*-?\s*pro/i, pic: "unifi_rack" },
+      { id: "unifi_udm_se", name: "Dream Machine SE", re: /\budm\s*-?\s*se/i, pic: "unifi_rack" },
+      { id: "unifi_cloud_gateway_ultra", name: "Cloud Gateway Ultra", re: /\budrult|\bucg\s*-?\s*ultra/i, pic: "unifi_compact" },
+      { id: "unifi_cloud_gateway_max", name: "Cloud Gateway Max", re: /\bucg\s*-?\s*max/i, pic: "unifi_compact" },
+      { id: "unifi_cloud_gateway_fiber", name: "Cloud Gateway Fiber", re: /\bucg\s*-?\s*f/i, pic: "unifi_compact" },
+      { id: "unifi_dream_router", name: "Dream Router", re: /\budr/i, pic: "unifi_cylinder" },
+      { id: "unifi_dream_wall", name: "Dream Wall", re: /\budw/i, pic: "unifi_compact" },
+      { id: "unifi_udm", name: "Dream Machine", re: /\budm/i, pic: "unifi_cylinder" },
+      { id: "unifi_express", name: "UniFi Express", re: /\bux\d*\b/i, pic: "unifi_compact" },
+      { id: "unifi_next_gen_gateway", name: "Next-Gen Gateway", re: /\buxg/i, pic: "unifi_rack" },
+      { id: "unifi_security_gateway", name: "Security Gateway", re: /\b(usg|ugw)/i, pic: "unifi_compact" },
+      { id: "unifi_gateway", name: "UniFi Gateway", re: /./, pic: "unifi_compact", fromDevice: true },
     ],
-    keys: { wan: "device_state" },
+    keys: { wan: "device_state", cpu: "device_cpu_utilization", ram: "device_memory_utilization", latency: "wan_latency" },
     wanOn: "connected",
     alt: { rate_down: /^port_bandwidth_rx$/, rate_up: /^port_bandwidth_tx$/ },
     altPrefer: /(^|[^a-z])wan\d?([^a-z]|$)/i,
@@ -2620,7 +2724,7 @@ const level = (v, warn, crit) => (v === null ? "" : v >= crit ? "crit" : v >= wa
 
 // Default warning / critical thresholds: temperatures in °C, disk in % used. Each can be set in the card options
 // (`temp_warning`, `temp_critical`, `disk_warning`, `disk_critical`), named as on the system-monitor card.
-const THRESHOLDS = { temp_warning: 75, temp_critical: 90, disk_warning: 80, disk_critical: 90 };
+const THRESHOLDS = { temp_warning: 75, temp_critical: 90, disk_warning: 80, disk_critical: 90, cpu_warning: 80, cpu_critical: 95, ram_warning: 85, ram_critical: 95 };
 
 // Options renamed in 2.8.0 (`storage_*` -> `disk_*`), still read under their old name; the new name wins when both are set.
 const LEGACY_OPTIONS = { storage_warning: "disk_warning", storage_critical: "disk_critical" };
@@ -2786,6 +2890,11 @@ const isAlt = (op, e, slot) =>
   !!(op.alt?.[slot] && (!/^rate_/.test(slot) || e.entity_id.startsWith("sensor.")) && op.alt[slot].test(e.translation_key || ""));
 const isAltRate = isAlt;
 
+/** Tile label of a WAN latency sensor: its name without the word "latency", whatever the language Home Assistant
+ *  named it in ("Google WAN Latenz" -> "Google WAN"); the whole name when nothing is left. */
+const LATENCY_WORD = /\s*(?<!\p{L})(latency|latenz|latence|latenza|latencia|latência|latentie|latens|latentums|latență|latencie|opóźnienie|késleltetés|zakasnitev|задержка|затримка|закъснение|кашњење|kašnjenje|καθυστέρηση)(?!\p{L})\s*/giu;
+const latencyLabel = (name) => name.replace(LATENCY_WORD, " ").replace(/\s+/g, " ").trim() || name;
+
 /** Entity kept for an alternate-key rate slot, between the one already there and a new match: the first one found,
  *  unless the new one's name or id matches the operator's preferred pattern and the kept one does not (the UniFi
  *  gateway's WAN port among the ports whose bandwidth sensors are enabled). */
@@ -2936,7 +3045,7 @@ const fillTrackers = (hass, box, value) => {
     .sort();
 };
 
-const emptyBox = () => ({ id: null, device: null, operator: null, lineType: null, scalars: {}, temps: [], fans: [], partitions: [], raids: [], trackers: [] });
+const emptyBox = () => ({ id: null, device: null, operator: null, lineType: null, scalars: {}, temps: [], fans: [], partitions: [], raids: [], trackers: [], latency: [] });
 
 /**
  * Map the entities of one box to a structured object of entity ids. The result is cached on the
@@ -3047,6 +3156,10 @@ const discover = (hass, boxId) => {
         else if (own && domain === "button" && ((keys.reboot && k === keys.reboot) || (!k && a.device_class === "restart"))) box.scalars.reboot = id;
         else if (keys.partition && k === keys.partition) box.partitions.push({ id, device: d });
         else if (keys.raid && k === keys.raid) box.raids.push(id);
+        // CPU and memory use in % (UniFi gateway), and the WAN latency sensors, one per monitored target and WAN.
+        else if (own && domain === "sensor" && keys.cpu && k === keys.cpu) box.scalars.cpu = id;
+        else if (own && domain === "sensor" && keys.ram && k === keys.ram) box.scalars.ram = id;
+        else if (own && domain === "sensor" && keys.latency && k === keys.latency) box.latency.push({ id, name: shortName(hass, id, dev) });
         // Temperatures: the box's temperature sensors, with a key (FRITZ!Box cpu_temperature) or not (Freebox).
         else if (own && domain === "sensor" && a.device_class === "temperature") box.temps.push({ id, name: shortName(hass, id, dev) });
         else if (own && domain === "sensor" && !k && /^(rpm|tr\/min)$/i.test(a.unit_of_measurement || ""))
@@ -3252,7 +3365,7 @@ const DIALOG_STYLE = `
 const HIST_REFRESH = 5 * 60000;
 const HIST_WINDOW = 864e5;
 const HIST_PERIOD = 5 * 60000;
-function spark(points, end) {
+function spark(points, end, max = 0) {
   if (!points || points.length < 2) return "";
   const start = end - HIST_WINDOW;
   const inWindow = points.filter(([at]) => at >= start && at <= end).sort((a, b) => a[0] - b[0]);
@@ -3268,9 +3381,9 @@ function spark(points, end) {
   runs.push(run);
   const drawn = runs.filter((r) => r.length >= 2);
   if (!drawn.length) return "";
-  const peak = Math.max(...drawn.flat().map(([, v]) => v)) || 1;
+  const peak = max || Math.max(...drawn.flat().map(([, v]) => v)) || 1;
   const x = (at) => (((at - start) / HIST_WINDOW) * 100).toFixed(2);
-  const y = (v) => (30 - (Math.max(0, v) / peak) * 28).toFixed(2);
+  const y = (v) => (30 - (Math.min(Math.max(0, v), peak) / peak) * 28).toFixed(2);
   const lines = drawn.map((r) => `M${r.map(([at, v]) => `${x(at)},${y(v)}`).join("L")}`);
   const areas = drawn.map((r, i) => `M${x(r[0][0])},30L${lines[i].slice(1)}L${x(r[r.length - 1][0])},30Z`);
   return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path class="spark-a" d="${areas.join("")}"/><path class="spark-l" d="${lines.join(
@@ -3561,6 +3674,7 @@ class InternetBoxBase extends HTMLElement {
       ...box.partitions.map((x) => x.id),
       ...box.raids,
       ...box.trackers,
+      ...(box.latency || []).map((x) => x.id),
     ];
     for (const id of ids) sig.push(h.states[id]);
     for (const id of Object.values(discoverSpeedtest(h) || {})) sig.push(h.states[id]);
@@ -3765,7 +3879,13 @@ const FULL_STYLE = `
   .facts .icon { width: 14px; height: 14px; color: var(--secondary-text-color); }
   .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 6px; }
   .gauge { display: flex; flex-direction: column; align-items: center; position: relative; }
-  .gauge .val .icon { width: 12px; height: 12px; }
+  .gauge .val .icon { width: 12px; height: 12px; color: var(--secondary-text-color); }
+  .gauge.use { isolation: isolate; border-radius: 10px; overflow: hidden; }
+  .gauge.use:not(.ok, .warn, .crit) { --c: var(--ibc-accent); }
+  .gauge .spark { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+  .gauge.use .val { flex-direction: column; }
+  .lats { margin-top: 6px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+  .tile.lat { --c: var(--accent-color, #ff9800); }
   .ring { width: 52px; height: 52px; transform: rotate(-90deg); }
   .ring circle { fill: none; stroke-width: 6; }
   .ring .track { stroke: var(--divider-color, rgba(127,127,127,.25)); }
@@ -3857,8 +3977,9 @@ class InternetBoxCard extends InternetBoxBase {
     if (!box.id) return this._noBox();
     const c = this._config;
     const parts = [];
-    if (c.show_network !== false) parts.push(this._network(box));
-    if (c.show_system !== false) parts.push(this._system(box));
+    const hist = this._fullHistory(box);
+    if (c.show_network !== false) parts.push(this._network(box, hist));
+    if (c.show_system !== false) parts.push(this._system(box, hist));
     if (c.show_storage !== false) parts.push(this._storage(box));
     if (c.show_services !== false) parts.push(this._services(box));
     return `<style>${BASE_STYLE}${FULL_STYLE}</style>
@@ -3868,7 +3989,28 @@ class InternetBoxCard extends InternetBoxBase {
       </ha-card>`;
   }
 
-  _network(box) {
+  // One recorder request for every curve of the full card (a second one would replace the first): the rates, the
+  // CPU and RAM use, the WAN latencies. Only the curves of the sections shown.
+  _fullHistory(box) {
+    const c = this._config;
+    if (c.show_history === false) return null;
+    const sc = box.scalars;
+    const ids = [
+      ...(c.show_network !== false ? [sc.rate_down, sc.rate_up, ...this._latencies(box).map((x) => x.id)] : []),
+      ...(c.show_system !== false ? [sc.cpu, sc.ram] : []),
+    ].filter(Boolean);
+    return ids.length ? this._history(ids) : null;
+  }
+
+  // The WAN latency sensors that have a value (a second WAN without line has none), by name.
+  _latencies(box) {
+    return (box.latency || [])
+      .filter(({ id }) => !noValue(this._s(id)))
+      .map((x) => ({ ...x, label: latencyLabel(x.name) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  _network(box, hist = null) {
     const sc = box.scalars;
     const rates = sc.rate_down || sc.rate_up || sc.sync_down || sc.sync_up;
     const router = this._s(sc.router);
@@ -3911,18 +4053,44 @@ class InternetBoxCard extends InternetBoxBase {
         )}">${svgIcon(ICONS.speedtest)}${esc(parts.join(" · "))}</span>`
       );
     }
+    // WAN latency tiles (UniFi gateway), each with its last 24 hours.
+    const lat = this._latencies(box).map(({ id, name, label }) => {
+      const v = num(this._s(id));
+      return `<div class="tile lat clickable" role="button" tabindex="0" data-key="${id}" data-entity="${id}">${spark(hist?.[id], hist?.end)}${svgIcon(
+        ICONS.timer
+      )}<div><div class="k" title="${esc(name)}">${esc(label)}</div><div class="v">${v === null ? "—" : `${Math.round(v)} ms`}</div></div></div>`;
+    });
     // Without any rate or sync sensor, the IP address and the uptime are still shown.
-    if (!rates && !facts.length) return "";
-    const hist = !rates || this._config.show_history === false ? null : this._history([sc.rate_down, sc.rate_up].filter(Boolean));
+    if (!rates && !facts.length && !lat.length) return "";
     return `<div>
       <div class="section-title">${svgIcon(ICONS.network)}${this._t("network")}</div>
       ${rates ? `<div class="grid2">${this._rateTiles(sc, hist)}</div>` : ""}
+      ${lat.length ? `<div class="tiles lats">${lat.join("")}</div>` : ""}
       ${facts.length ? `<div class="facts">${facts.join("")}</div>` : ""}
     </div>`;
   }
 
-  _system(box) {
-    if (!box.temps.length && !box.fans.length) return "";
+  _system(box, hist = null) {
+    const sc = box.scalars;
+    if (!box.temps.length && !box.fans.length && !sc.cpu && !sc.ram) return "";
+    // CPU and RAM use (UniFi gateway): a gauge each, with its last 24 hours behind it on a 0-100 % scale.
+    const usage = [
+      [sc.cpu, "cpu"],
+      [sc.ram, "ram"],
+    ]
+      .filter(([id]) => id)
+      .map(([id, metric]) => {
+        const v = num(this._s(id));
+        return `<div class="gauge use clickable ${this._level(v, metric)}" role="button" tabindex="0" data-key="${id}" data-entity="${id}">${spark(
+          hist?.[id],
+          hist?.end,
+          100
+        )}
+        ${ring(v)}
+        <div class="val">${svgIcon(ICONS[metric])}<b>${v === null ? "—" : `${Math.round(v)}%`}</b></div>
+        <div class="lbl">${this._t(metric)}</div>
+      </div>`;
+      });
     // "Température CPU 0" -> "CPU 0", "Température 1" -> "Temp. 1"; CPU sensors first.
     const temps = box.temps
       .map(({ id, name }) => {
@@ -3947,7 +4115,7 @@ class InternetBoxCard extends InternetBoxBase {
     });
     return `<div>
       <div class="section-title">${svgIcon(ICONS.temp)}${this._t("system")}</div>
-      ${gauges.length ? `<div class="gauges">${gauges.join("")}</div>` : ""}
+      ${usage.length || gauges.length ? `<div class="gauges">${[...usage, ...gauges].join("")}</div>` : ""}
       ${fans.length ? `<div class="tiles fans">${fans.join("")}</div>` : ""}
     </div>`;
   }

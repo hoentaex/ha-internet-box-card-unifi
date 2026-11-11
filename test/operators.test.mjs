@@ -350,3 +350,28 @@ test("UniFi: a gateway model unknown to the card is found by its WAN latency sen
   assert.equal(box.id, "box");
   assert.equal(boxModel(box, {}).name, "XG9000");
 });
+
+test("UniFi: CPU and RAM gauges next to the temperature, WAN latency tiles named without the word latency", () => {
+  const hass = unifiHass();
+  const add = (id, key, state, attributes) => {
+    hass.states[id] = { entity_id: id, state, attributes };
+    hass.entities[id] = { entity_id: id, platform: "unifi", device_id: "box", translation_key: key };
+  };
+  add("sensor.gw_memory_utilization", "device_memory_utilization", "91", { unit_of_measurement: "%" });
+  add("sensor.gw_cloudflare_wan_latency", "wan_latency", "8", { unit_of_measurement: "ms", friendly_name: "Gateway Home Cloudflare WAN Latenz" });
+  add("sensor.gw_google_wan2_latency", "wan_latency", "unavailable", { friendly_name: "Gateway Home Google WAN2 Latenz" });
+  const box = discover(hass);
+  assert.equal(box.scalars.cpu, "sensor.gw_cpu_utilization");
+  assert.equal(box.scalars.ram, "sensor.gw_memory_utilization");
+  assert.equal(box.latency.length, 3);
+  const html = renderWith(InternetBoxCard, hass);
+  // CPU, RAM, then the temperature, in one row of gauges; the RAM above its warning threshold.
+  const gauges = html.match(/<div class="gauges">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)[0];
+  assert.ok(gauges.indexOf("sensor.gw_cpu_utilization") < gauges.indexOf("sensor.gw_memory_utilization"));
+  assert.ok(gauges.indexOf("sensor.gw_memory_utilization") < gauges.indexOf("sensor.gw_cpu_temperature"));
+  assert.match(html, /gauge use clickable warn[^>]*data-entity="sensor\.gw_memory_utilization"/);
+  assert.match(html, /<div class="k" title="Cloudflare WAN Latenz">Cloudflare WAN<\/div><div class="v">8 ms<\/div>/);
+  // A second WAN without line has no value: no tile.
+  assert.doesNotMatch(html, /gw_google_wan2_latency/);
+  assert.equal(boxModel(box, {}).pic, "unifi_rack");
+});

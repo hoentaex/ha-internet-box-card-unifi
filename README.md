@@ -8,11 +8,19 @@ Fork of [ha-internet-box-card](https://github.com/juju35/ha-internet-box-card) b
 |---|---|
 | Status pill (online / offline) | the gateway's device state sensor (`connected`) |
 | Uptime | the gateway's uptime sensor |
+| CPU and RAM use, with their 24 h curve | the gateway's CPU and memory utilization sensors, gauges next to the temperatures |
 | Temperatures | the gateway's temperature sensors (CPU, local, PHY…) |
+| WAN latency, with its 24 h curve | the gateway's WAN latency sensors (Google, Cloudflare, Microsoft; disabled by default), one tile each |
 | Restart button | the gateway's restart button (not the PoE power cycle buttons) |
 | Connected devices | the integration's client trackers |
 | Last speed test | the [Speedtest.net](https://www.home-assistant.io/integrations/speedtestdotnet/) integration, when set up |
 | Download / upload, 24 h curve | the gateway's WAN port bandwidth sensors, see below |
+
+The gateway picture follows its form factor: a rack unit (Dream Machine Pro / SE / Pro Max), a desktop box (Cloud Gateway Ultra / Max / Fiber, Express) or a cylinder (Dream Machine, Dream Router); set the `model` option to pick another one.
+
+| Rack unit | Desktop box | Cylinder |
+|:---:|:---:|:---:|
+| <img src="images/unifi-rack.svg" alt="rack unit" width="160"> | <img src="images/unifi-compact.svg" alt="desktop box" width="160"> | <img src="images/unifi-cylinder.svg" alt="cylinder" width="160"> |
 
 Only a device whose model is a gateway (UDM…, UDR…, UCG…, UXG…, USG / UGW…, EFG, UX), or that has the WAN latency sensors only a gateway gets, is taken as the box: the switches and access points of the integration are left out.
 
