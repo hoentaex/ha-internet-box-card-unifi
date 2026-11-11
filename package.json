@@ -1,6 +1,6 @@
 {
   "name": "ha-internet-box-card",
-  "version": "3.1.0-unifi.4",
+  "version": "3.1.0-unifi.5",
   "description": "Lovelace cards for Home Assistant to monitor a UniFi gateway (UniFi Network integration), fork of ha-internet-box-card that keeps its other integrations.",
   "private": true,
   "type": "module",

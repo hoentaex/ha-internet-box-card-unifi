@@ -3317,6 +3317,9 @@ const BASE_STYLE = `
           background: var(--secondary-background-color, rgba(127,127,127,.08)); position: relative; overflow: hidden; }
   .tile > :not(.spark) { position: relative; }
   .tile .spark { position: absolute; left: 0; bottom: 0; width: 100%; height: 55%; pointer-events: none; }
+  /* A tile with a chart is taller: the label and value at the top, the chart in a band of its own under them. */
+  .tile:has(> .spark) { align-items: flex-start; padding-bottom: 30px; }
+  .tile:has(> .spark) .spark { height: 28px; }
   .spark-a { fill: color-mix(in srgb, var(--c) 12%, transparent); }
   .spark-l { fill: none; stroke: color-mix(in srgb, var(--c) 50%, transparent); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
   .tile .icon { color: color-mix(in srgb, var(--c, var(--ibc-red)) 60%, var(--primary-text-color)); }
@@ -3882,7 +3885,12 @@ const FULL_STYLE = `
   .gauge .val .icon { width: 12px; height: 12px; color: var(--secondary-text-color); }
   .gauge.use { isolation: isolate; border-radius: 10px; overflow: hidden; }
   .gauge.use:not(.ok, .warn, .crit) { --c: var(--ibc-accent); }
-  .gauge .spark { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+  /* CPU / RAM: the ring and its label at the top, the 24 h chart in a band of its own at the bottom. The other
+     gauges of the row get the same top padding, so all rings stay on one line. */
+  .gauges:has(.use) .gauge { padding-top: 8px; }
+  .gauges:has(.use) .gauge .val { top: 8px; }
+  .gauge.use { padding-bottom: 34px; background: var(--secondary-background-color, rgba(127,127,127,.08)); }
+  .gauge .spark { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 30px; z-index: -1; pointer-events: none; }
   .gauge.use .val { flex-direction: column; }
   .lats { margin-top: 6px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
   .tile.lat { --c: var(--accent-color, #ff9800); }
@@ -3930,14 +3938,13 @@ const FULL_STYLE = `
      restart button, so on a narrow card the box picture gets smaller to leave room for the title, then is hidden.
      The compact mini keeps its full-size picture (MINI_STYLE). */
   @container (max-width: 460px) { .box { height: 38px; } }
-  @container (max-width: 380px) { .box { height: 32px; } }
-  /* Up to 340 px (9 to 12 columns of a phone section) the title, the status pill under it and the restart button
-     need the whole header: with the picture the title block would be narrower than the whole pill text (up to
-     135 px, "Fuera de línea · FTTH"). */
-  @container (max-width: 340px) { .box-link { display: none; } }
-  /* On a narrow full card the status pill would squeeze the title on its line; move it below the title (in the
-     first column, under the name) so the title keeps the full width. */
-  @container (max-width: 440px) {
+  /* Up to 440 px the title, the status pill next to it and the restart button need the whole header: with the
+     picture the title would be squeezed by the whole pill text (up to 135 px, "Fuera de línea · FTTH"). */
+  @container (max-width: 440px) { .box-link { display: none; } }
+  /* The status pill sits top right, next to the title. Only on a narrow card (up to 340 px, where the box picture is
+     already hidden) would it squeeze the title on its line: there it moves below the title (in the first column,
+     under the name) so the title keeps the full width. */
+  @container (max-width: 340px) {
     .titles > .chip.status { grid-column: 1; grid-row: auto; align-self: start; justify-self: start; margin: 4px 0 0; }
   }
   /* Narrower still (below 9 columns of a phone section): only the pill's coloured dot, back on the title line (its
