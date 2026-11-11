@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0-unifi.6 - 2026-11-11
+
+### Features
+- `section_order` puts the sections of the full card (network, speed test, system, storage, services) in any order; in the card editor they are chips to drag. Sections left out follow in their default order, the `show_*` options still show or hide each one.
+
 ## 3.1.0-unifi.5 - 2026-11-11
 
 ### Changes

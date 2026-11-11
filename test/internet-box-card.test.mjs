@@ -746,6 +746,45 @@ test("thresholds in the editor: shown at their defaults, kept in the YAML only w
   for (const k of ["temp_critical", "disk_warning", "disk_critical"]) assert.equal(k in out, false, k);
 });
 
+test("section_order sorts the sections of the full card; left-out sections follow, show_* still hides", async () => {
+  const titles = (html) => [...html.matchAll(/class="section-title">(?:<svg[\s\S]*?<\/svg>)?([^<]+)/g)].map((m) => m[1]).join();
+  const el = await mockCard({});
+  const before = titles(el._render());
+  assert.match(before, /^Network,.*System/);
+  el._config = { ...el._config, section_order: ["system", "nonsense", "network"] };
+  const after = titles(el._render());
+  assert.match(after, /^System,Network/);
+  assert.equal(after.split(",").sort().join(), before.split(",").sort().join());
+  el._config = { ...el._config, show_system: false };
+  assert.match(titles(el._render()), /^Network/);
+});
+
+test("the editor offers the section order as chips to drag, all sections always listed, the default left out of the YAML", () => {
+  const { InternetBoxCardEditor, InternetBoxMiniCardEditor } = load("internet-box-card.js", ["InternetBoxCardEditor", "InternetBoxMiniCardEditor"]);
+  const ed = new InternetBoxCardEditor();
+  ed.appendChild = () => {};
+  const emitted = [];
+  ed.dispatchEvent = (ev) => emitted.push(ev.detail.config);
+  ed.setConfig({ box: "router" });
+  ed.hass = { states: baseStates(), entities, devices, language: "en" };
+  assert.equal(ed._form.data.section_order.join(), "network,speedtest,system,storage,services");
+  const field = ed._form.schema.find((x) => x.name === "section_order");
+  assert.equal(field.selector.select.reorder, true);
+  assert.equal(field.selector.select.multiple, true);
+  const change = (order) => ed._form.listeners["value-changed"]({ stopPropagation() {}, detail: { value: { ...ed._form.data, section_order: order } } });
+  // A removed section comes back at the end.
+  change(["services", "network", "system", "storage"]);
+  assert.equal(emitted.at(-1).section_order.join(), "services,network,system,storage,speedtest");
+  change(["network", "speedtest", "system", "storage", "services"]);
+  assert.equal("section_order" in emitted.at(-1), false);
+  const mini = new InternetBoxMiniCardEditor();
+  mini.appendChild = () => {};
+  mini.dispatchEvent = () => {};
+  mini.setConfig({ box: "router" });
+  mini.hass = { states: baseStates(), entities, devices, language: "en" };
+  assert.equal(mini._form.schema.some((x) => x.name === "section_order"), false);
+});
+
 test("sparkline: real time axis over the 24 h window, broken where the recorder has no data", () => {
   const { spark, statTime } = load("internet-box-card.js", ["spark", "statTime"]);
   const end = Date.UTC(2026, 10, 7, 12);

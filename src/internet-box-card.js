@@ -680,6 +680,8 @@ const STRINGS = {
     show_storage: "Show storage",
     show_services: "Show services (Wi-Fi, calls, devices)",
     show_speedtest: "Show the last speed test (Speedtest.net)",
+    section_order: "Order of the sections",
+    section_order_helper: "Drag the sections into the order you want; the switches above show or hide them",
     speedtest: "Speed test",
     zoom: "Detail button",
     zoom_helper: "Button at the top right that shows the full card in place of the mini card, and back",
@@ -756,6 +758,8 @@ const STRINGS = {
     show_storage: "Afficher le stockage",
     show_services: "Afficher les services (Wi-Fi, appels, appareils)",
     show_speedtest: "Afficher le dernier test de débit (Speedtest.net)",
+    section_order: "Ordre des sections",
+    section_order_helper: "Faites glisser les sections dans l'ordre voulu ; les interrupteurs ci-dessus les affichent ou les masquent",
     speedtest: "Test de débit",
     zoom: "Bouton détail",
     zoom_helper: "Bouton en haut à droite qui affiche la carte complète à la place de la mini carte, et inversement",
@@ -831,6 +835,8 @@ const STRINGS = {
     show_storage: "Speicher anzeigen",
     show_services: "Dienste anzeigen (WLAN, Anrufe, Geräte)",
     show_speedtest: "Letzten Geschwindigkeitstest anzeigen (Speedtest.net)",
+    section_order: "Reihenfolge der Bereiche",
+    section_order_helper: "Bereiche in die gewünschte Reihenfolge ziehen; die Schalter oben blenden sie ein oder aus",
     speedtest: "Geschwindigkeitstest",
     zoom: "Detail-Schaltfläche",
     zoom_helper: "Schaltfläche oben rechts, die anstelle der Mini-Karte die vollständige Karte anzeigt und umgekehrt",
@@ -907,6 +913,8 @@ const STRINGS = {
     show_storage: "Mostrar el almacenamiento",
     show_services: "Mostrar los servicios (Wi-Fi, llamadas, dispositivos)",
     show_speedtest: "Mostrar el último test de velocidad (Speedtest.net)",
+    section_order: "Orden de las secciones",
+    section_order_helper: "Arrastra las secciones al orden deseado; los interruptores de arriba las muestran u ocultan",
     speedtest: "Test de velocidad",
     zoom: "Botón de detalle",
     zoom_helper: "Botón arriba a la derecha que muestra la tarjeta completa en lugar de la minitarjeta, y viceversa",
@@ -984,6 +992,8 @@ const STRINGS = {
     show_storage: "Прикажи складиште",
     show_services: "Прикажи услуге (Вај-фај, позиви, уређаји)",
     show_speedtest: "Прикажи последњи тест брзине (Speedtest.net)",
+    section_order: "Редослед одељака",
+    section_order_helper: "Превуците одељке у жељени редослед; прекидачи изнад их приказују или скривају",
     speedtest: "Тест брзине",
     zoom: "Дугме за детаље",
     zoom_helper: "Дугме у горњем десном углу које пребацује мини картицу на пун приказ и назад",
@@ -1061,6 +1071,8 @@ const STRINGS = {
     show_storage: "Prikaži skladište",
     show_services: "Prikaži usluge (Wi-Fi, pozivi, uređaji)",
     show_speedtest: "Prikaži poslednji test brzine (Speedtest.net)",
+    section_order: "Redosled odeljaka",
+    section_order_helper: "Prevucite odeljke u željeni redosled; prekidači iznad ih prikazuju ili skrivaju",
     speedtest: "Test brzine",
     zoom: "Dugme za detalje",
     zoom_helper: "Dugme u gornjem desnom uglu koje prebacuje mini karticu na pun prikaz i nazad",
@@ -1137,6 +1149,8 @@ const STRINGS = {
     show_storage: "Mostra l'archiviazione",
     show_services: "Mostra i servizi (Wi-Fi, chiamate, dispositivi)",
     show_speedtest: "Mostra l'ultimo test di velocità (Speedtest.net)",
+    section_order: "Ordine delle sezioni",
+    section_order_helper: "Trascina le sezioni nell'ordine desiderato; gli interruttori sopra le mostrano o nascondono",
     speedtest: "Test di velocità",
     zoom: "Pulsante dettagli",
     zoom_helper: "Pulsante in alto a destra che mostra la scheda completa al posto della mini scheda, e viceversa",
@@ -1212,6 +1226,8 @@ const STRINGS = {
     show_storage: "Opslag tonen",
     show_services: "Diensten tonen (Wi-Fi, oproepen, apparaten)",
     show_speedtest: "Laatste snelheidstest tonen (Speedtest.net)",
+    section_order: "Volgorde van de secties",
+    section_order_helper: "Sleep de secties in de gewenste volgorde; de schakelaars hierboven tonen of verbergen ze",
     speedtest: "Snelheidstest",
     zoom: "Detailknop",
     zoom_helper: "Knop rechtsboven die de volledige kaart toont in plaats van de minikaart, en terug",
@@ -1288,6 +1304,8 @@ const STRINGS = {
     show_storage: "Mostrar o armazenamento",
     show_services: "Mostrar os serviços (Wi-Fi, chamadas, dispositivos)",
     show_speedtest: "Mostrar o último teste de velocidade (Speedtest.net)",
+    section_order: "Ordem das secções",
+    section_order_helper: "Arraste as secções para a ordem pretendida; os interruptores acima mostram-nas ou ocultam-nas",
     speedtest: "Teste de velocidade",
     zoom: "Botão de detalhe",
     zoom_helper: "Botão no canto superior direito que mostra o cartão completo em vez do minicartão, e vice-versa",
@@ -1366,6 +1384,8 @@ const STRINGS = {
     show_storage: "Pokaż pamięć masową",
     show_services: "Pokaż usługi (Wi-Fi, połączenia, urządzenia)",
     show_speedtest: "Pokaż ostatni test prędkości (Speedtest.net)",
+    section_order: "Kolejność sekcji",
+    section_order_helper: "Przeciągnij sekcje w wybranej kolejności; przełączniki powyżej je pokazują lub ukrywają",
     speedtest: "Test prędkości",
     zoom: "Przycisk szczegółów",
     zoom_helper: "Przycisk w prawym górnym rogu, który pokazuje pełną kartę zamiast minikarty, i z powrotem",
@@ -1442,6 +1462,8 @@ const STRINGS = {
     show_storage: "Afișează stocarea",
     show_services: "Afișează serviciile (Wi-Fi, apeluri, dispozitive)",
     show_speedtest: "Afișează ultimul test de viteză (Speedtest.net)",
+    section_order: "Ordinea secțiunilor",
+    section_order_helper: "Trageți secțiunile în ordinea dorită; comutatoarele de mai sus le afișează sau le ascund",
     speedtest: "Test de viteză",
     zoom: "Buton de detalii",
     zoom_helper: "Buton din dreapta sus care afișează cardul complet în locul minicardului, și invers",
@@ -1518,6 +1540,8 @@ const STRINGS = {
     show_storage: "Vis lager",
     show_services: "Vis tjenester (Wi-Fi, opkald, enheder)",
     show_speedtest: "Vis den seneste hastighedstest (Speedtest.net)",
+    section_order: "Rækkefølge af sektionerne",
+    section_order_helper: "Træk sektionerne i den ønskede rækkefølge; kontakterne ovenfor viser eller skjuler dem",
     speedtest: "Hastighedstest",
     zoom: "Detaljeknap",
     zoom_helper: "Knap øverst til højre, der viser hele kortet i stedet for minikortet og tilbage igen",
@@ -1594,6 +1618,8 @@ const STRINGS = {
     show_storage: "Visa lagring",
     show_services: "Visa tjänster (Wi-Fi, samtal, enheter)",
     show_speedtest: "Visa det senaste hastighetstestet (Speedtest.net)",
+    section_order: "Sektionernas ordning",
+    section_order_helper: "Dra sektionerna i önskad ordning; reglagen ovan visar eller döljer dem",
     speedtest: "Hastighetstest",
     zoom: "Detaljknapp",
     zoom_helper: "Knapp uppe till höger som visar hela kortet i stället för minikortet, och tillbaka",
@@ -1670,6 +1696,8 @@ const STRINGS = {
     show_storage: "Показване на хранилището",
     show_services: "Показване на услугите (Wi-Fi, обаждания, устройства)",
     show_speedtest: "Показване на последния тест на скоростта (Speedtest.net)",
+    section_order: "Ред на секциите",
+    section_order_helper: "Плъзнете секциите в желания ред; превключвателите по-горе ги показват или скриват",
     speedtest: "Тест на скоростта",
     zoom: "Бутон за подробности",
     zoom_helper: "Бутон горе вдясно, който показва пълната карта вместо мини картата и обратно",
@@ -1746,6 +1774,8 @@ const STRINGS = {
     show_storage: "Показывать хранилище",
     show_services: "Показывать сервисы (Wi-Fi, звонки, устройства)",
     show_speedtest: "Показывать последний тест скорости (Speedtest.net)",
+    section_order: "Порядок разделов",
+    section_order_helper: "Перетащите разделы в нужном порядке; переключатели выше показывают или скрывают их",
     speedtest: "Тест скорости",
     zoom: "Кнопка подробностей",
     zoom_helper: "Кнопка в правом верхнем углу, которая показывает полную карточку вместо мини-карточки и обратно",
@@ -1823,6 +1853,8 @@ const STRINGS = {
     show_storage: "Показувати сховище",
     show_services: "Показувати сервіси (Wi-Fi, дзвінки, пристрої)",
     show_speedtest: "Показувати останній тест швидкості (Speedtest.net)",
+    section_order: "Порядок розділів",
+    section_order_helper: "Перетягніть розділи в потрібному порядку; перемикачі вище показують або приховують їх",
     speedtest: "Тест швидкості",
     zoom: "Кнопка подробиць",
     zoom_helper: "Кнопка у правому верхньому куті, яка показує повну картку замість мінікартки, і навпаки",
@@ -1898,6 +1930,8 @@ const STRINGS = {
     show_storage: "Tárhely megjelenítése",
     show_services: "Szolgáltatások megjelenítése (Wi-Fi, hívások, eszközök)",
     show_speedtest: "Utolsó sebességteszt megjelenítése (Speedtest.net)",
+    section_order: "A szakaszok sorrendje",
+    section_order_helper: "Húzza a szakaszokat a kívánt sorrendbe; a fenti kapcsolók megjelenítik vagy elrejtik őket",
     speedtest: "Sebességteszt",
     zoom: "Részletek gomb",
     zoom_helper: "Gomb a jobb felső sarokban, amely a minikártya helyett a teljes kártyát jeleníti meg, és vissza",
@@ -1975,6 +2009,8 @@ const STRINGS = {
     show_storage: "Zobraziť úložisko",
     show_services: "Zobraziť služby (Wi-Fi, hovory, zariadenia)",
     show_speedtest: "Zobraziť posledný test rýchlosti (Speedtest.net)",
+    section_order: "Poradie sekcií",
+    section_order_helper: "Presuňte sekcie do požadovaného poradia; prepínače vyššie ich zobrazia alebo skryjú",
     speedtest: "Test rýchlosti",
     zoom: "Tlačidlo podrobností",
     zoom_helper: "Tlačidlo vpravo hore, ktoré namiesto minikarty zobrazí celú kartu, a naopak",
@@ -2052,6 +2088,8 @@ const STRINGS = {
     show_storage: "Zobrazit úložiště",
     show_services: "Zobrazit služby (Wi-Fi, hovory, zařízení)",
     show_speedtest: "Zobrazit poslední test rychlosti (Speedtest.net)",
+    section_order: "Pořadí sekcí",
+    section_order_helper: "Přetáhněte sekce do požadovaného pořadí; přepínače výše je zobrazí nebo skryjí",
     speedtest: "Test rychlosti",
     zoom: "Tlačítko podrobností",
     zoom_helper: "Tlačítko vpravo nahoře, které místo minikarty zobrazí celou kartu, a zpět",
@@ -2130,6 +2168,8 @@ const STRINGS = {
     show_storage: "Prikaži shrambo",
     show_services: "Prikaži storitve (Wi-Fi, klici, naprave)",
     show_speedtest: "Prikaži zadnji preizkus hitrosti (Speedtest.net)",
+    section_order: "Vrstni red razdelkov",
+    section_order_helper: "Povlecite razdelke v želeni vrstni red; stikala zgoraj jih prikažejo ali skrijejo",
     speedtest: "Preizkus hitrosti",
     zoom: "Gumb za podrobnosti",
     zoom_helper: "Gumb zgoraj desno, ki namesto mini kartice prikaže celotno kartico, in nazaj",
@@ -2206,6 +2246,8 @@ const STRINGS = {
     show_storage: "Rādīt krātuvi",
     show_services: "Rādīt pakalpojumus (Wi-Fi, zvani, ierīces)",
     show_speedtest: "Rādīt pēdējo ātruma testu (Speedtest.net)",
+    section_order: "Sadaļu secība",
+    section_order_helper: "Velciet sadaļas vēlamajā secībā; slēdži augstāk tās parāda vai paslēpj",
     speedtest: "Ātruma tests",
     zoom: "Detaļu poga",
     zoom_helper: "Poga augšējā labajā stūrī, kas minikartītes vietā parāda pilno kartīti, un atpakaļ",
@@ -2282,6 +2324,8 @@ const STRINGS = {
     show_storage: "Εμφάνιση αποθήκευσης",
     show_services: "Εμφάνιση υπηρεσιών (Wi-Fi, κλήσεις, συσκευές)",
     show_speedtest: "Εμφάνιση του τελευταίου τεστ ταχύτητας (Speedtest.net)",
+    section_order: "Σειρά των ενοτήτων",
+    section_order_helper: "Σύρετε τις ενότητες στη σειρά που θέλετε· οι διακόπτες παραπάνω τις εμφανίζουν ή τις κρύβουν",
     speedtest: "Τεστ ταχύτητας",
     zoom: "Κουμπί λεπτομερειών",
     zoom_helper: "Κουμπί πάνω δεξιά που εμφανίζει την πλήρη κάρτα στη θέση της μίνι κάρτας, και αντίστροφα",
@@ -3957,6 +4001,14 @@ const FULL_STYLE = `
   }
 `;
 
+// The sections of the full card, in their default order; section_order changes the order (sections it leaves out
+// follow in this order, unknown names are ignored). The show_* switches still show or hide each one.
+const SECTIONS = ["network", "speedtest", "system", "storage", "services"];
+const sectionOrder = (config) => {
+  const listed = Array.isArray(config?.section_order) ? config.section_order.filter((x) => SECTIONS.includes(x)) : [];
+  return [...new Set([...listed, ...SECTIONS])];
+};
+
 class InternetBoxCard extends InternetBoxBase {
   static getConfigElement() {
     return document.createElement("unifi-box-card-editor");
@@ -3980,13 +4032,17 @@ class InternetBoxCard extends InternetBoxBase {
     const box = discover(this._hass, this._config.box);
     if (!box.id) return this._noBox();
     const c = this._config;
-    const parts = [];
     const hist = this._fullHistory(box);
-    if (c.show_network !== false) parts.push(this._network(box, hist));
-    if (c.show_speedtest !== false) parts.push(this._speedtest(hist));
-    if (c.show_system !== false) parts.push(this._system(box));
-    if (c.show_storage !== false) parts.push(this._storage(box));
-    if (c.show_services !== false) parts.push(this._services(box));
+    const render = {
+      network: () => this._network(box, hist),
+      speedtest: () => this._speedtest(hist),
+      system: () => this._system(box),
+      storage: () => this._storage(box),
+      services: () => this._services(box),
+    };
+    const parts = sectionOrder(c)
+      .filter((name) => c[`show_${name}`] !== false)
+      .map((name) => render[name]());
     return `<style>${BASE_STYLE}${FULL_STYLE}</style>
       <ha-card style="--ibc-red:${brandOf(box, this._config).color}">
         ${this._header(box, true)}
@@ -4418,6 +4474,15 @@ class InternetBoxEditorBase extends HTMLElement {
           ...this.constructor.toggles.map((name) => ({ name, selector: { boolean: {} } })),
         ],
       },
+      // Full card: the order of its sections, as chips to drag (all five always listed).
+      ...(this.constructor.sections
+        ? [
+            {
+              name: "section_order",
+              selector: { select: { multiple: true, reorder: true, mode: "dropdown", options: SECTIONS.map((value) => ({ value, label: tr(value) })) } },
+            },
+          ]
+        : []),
       // Warning / critical thresholds, shown at their default values.
       {
         type: "grid",
@@ -4490,6 +4555,13 @@ class InternetBoxEditorBase extends HTMLElement {
           const models = discover(this._hass, config.box).operator?.models ?? MODELS;
           if (!models.some((m) => m.id === config.model)) delete config.model;
         }
+        // A section removed from the order list stays on the card (the show_* switches hide it): it is put back at
+        // the end, and the default order is not written to the YAML.
+        if (config.section_order) {
+          const order = sectionOrder(config);
+          if (order.join() === SECTIONS.join()) delete config.section_order;
+          else config.section_order = order;
+        }
         for (const [k, v] of Object.entries(config)) {
           // Keep the YAML minimal: drop empty values and options left at their default.
           if (
@@ -4516,6 +4588,7 @@ class InternetBoxEditorBase extends HTMLElement {
       }
     }
     const data = { rate_unit: "bytes", model: "", ...THRESHOLDS, ...this._config };
+    if (this.constructor.sections) data.section_order = sectionOrder(this._config);
     for (const name of ["show_image", "show_logo", ...this.constructor.toggles]) if (data[name] === undefined) data[name] = true;
     this._form.hass = this._hass;
     this._form.data = data;
@@ -4533,6 +4606,10 @@ class InternetBoxEditorBase extends HTMLElement {
 class InternetBoxCardEditor extends InternetBoxEditorBase {
   static get toggles() {
     return ["show_network", "show_history", "show_speedtest", "show_system", "show_storage", "show_services"];
+  }
+
+  static get sections() {
+    return true;
   }
 }
 

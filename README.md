@@ -8,12 +8,12 @@ Fork of [ha-internet-box-card](https://github.com/juju35/ha-internet-box-card) b
 |---|---|
 | Status pill (online / offline) | the gateway's device state sensor (`connected`) |
 | Uptime | the gateway's uptime sensor |
-| CPU and RAM use, with their 24 h curve | the gateway's CPU and memory utilization sensors, gauges next to the temperatures |
+| CPU and RAM use | the gateway's CPU and memory utilization sensors, gauges next to the temperatures |
 | Temperatures | the gateway's temperature sensors (CPU, local, PHY…) |
 | WAN latency, with its 24 h curve | the gateway's WAN latency sensors (Google, Cloudflare, Microsoft; disabled by default), one tile each |
 | Restart button | the gateway's restart button (not the PoE power cycle buttons) |
 | Connected devices | the integration's client trackers |
-| Speed test section: download, upload and ping, with their 24 h curve | the [Speedtest.net](https://www.home-assistant.io/integrations/speedtestdotnet/) integration, when set up |
+| Speed test section: download and upload with their 24 h curve, ping, time of the test | the [Speedtest.net](https://www.home-assistant.io/integrations/speedtestdotnet/) integration, when set up |
 | Download / upload, 24 h curve | the gateway's WAN port bandwidth sensors, see below |
 
 The gateway picture follows its form factor: a rack unit (Dream Machine Pro / SE / Pro Max), a desktop box (Cloud Gateway Ultra / Max / Fiber, Express) or a cylinder (Dream Machine, Dream Router); set the `model` option to pick another one.
@@ -35,6 +35,16 @@ The UniFi Network integration has no WAN throughput sensor of its own; the port 
 RX is the download, TX the upload.
 
 The rates are shown in bytes (MB/s) by default; set `rate_unit: bits` (or **Rate unit: bits** in the card editor) to read them in Mbit/s, as the speed test and the internet providers give them.
+
+### Order of the sections
+
+The sections of the full card (network, speed test, system, storage, services) can be put in any order: in the card editor drag them in **Order of the sections**, or in YAML:
+
+```yaml
+section_order: [system, network, speedtest, services, storage]
+```
+
+Sections left out of the list follow in their default order; the `show_*` options still show or hide each section.
 
 ### Installation (HACS)
 
@@ -294,8 +304,9 @@ language: fr
 | `show_history` | both | `true` | 24 h curve behind the download / upload tiles, from the recorder's 5-minute statistics (rate sensors with a `state_class`), on a time axis: the curve breaks where the recorder has no data |
 | `show_system` | both | `true` | Temperatures and fans (hottest temperature on the mini card) |
 | `show_storage` | full | `true` | Disk partitions and RAID status |
-| `show_speedtest` | full | `true` | The last Speedtest.net test in the network section (download, upload and ping, in the rate unit chosen; its time on hover), when that integration is set up |
+| `show_speedtest` | full | `true` | The last Speedtest.net test, a section of its own (download and upload in the rate unit chosen, ping, time of the test), when that integration is set up |
 | `show_services` | full | `true` | Wi-Fi, missed calls and connected devices |
+| `section_order` | full | `[network, speedtest, system, storage, services]` | Order of the sections; those left out follow in this order |
 | `temp_warning` | both | `75` | Temperature (in °C, whatever the sensor's unit) from which a temperature turns orange |
 | `temp_critical` | both | `90` | Temperature (in °C) from which a temperature turns red |
 | `disk_warning` | both | `80` | Disk usage (in % used) from which a partition turns orange (full card); `storage_warning` before 2.8.0, still read |
