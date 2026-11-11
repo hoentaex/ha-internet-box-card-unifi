@@ -3867,7 +3867,7 @@ const ring = (pct) => {
 };
 
 const FULL_STYLE = `
-  .content { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 12px; }
+  .content { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 20px; }
   .section-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; text-transform: uppercase;
                    letter-spacing: .04em; color: var(--secondary-text-color); margin-bottom: 6px; }
   .section-title .icon { width: 16px; height: 16px; }

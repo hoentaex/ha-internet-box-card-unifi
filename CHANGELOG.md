@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0-unifi.4 - 2026-11-11
+
+### Changes
+- More room between the sections of the full card (20 px instead of 12 px), so that network, speed test, system and services stand apart.
+
 ## 3.1.0-unifi.3 - 2026-11-11
 
 ### Features
