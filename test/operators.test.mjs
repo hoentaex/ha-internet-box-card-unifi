@@ -274,3 +274,79 @@ test("Vodafone: the active connection gives the status pill; the title's own dev
   assert.doesNotMatch(sub, /B535-232/);
   assert.match(sub, /11\.0\.5\.3/);
 });
+
+// UniFi Network: the gateway, a switch and an access point all have a state sensor, an uptime and a restart button; the
+// switch has port bandwidth sensors too. Only the gateway is a box, its WAN port gives the rates.
+const unifiHass = (model = "UDMPRO", { wanPorts = true } = {}) => {
+  const hass = hassOf(
+    "unifi",
+    { name: "Gateway Home", model, sw_version: "4.1.13" },
+    [
+      ["sensor.gw_state", "device_state", "connected", { device_class: "enum" }],
+      ["sensor.gw_uptime", null, "2026-11-10T00:00:00+00:00", { device_class: "uptime" }],
+      ["sensor.gw_cpu_utilization", "device_cpu_utilization", "25", { unit_of_measurement: "%" }],
+      ["sensor.gw_cpu_temperature", "device_sub_temperature", "48.3", { unit_of_measurement: "°C", device_class: "temperature" }],
+      ["sensor.gw_google_wan_latency", "wan_latency", "11", { unit_of_measurement: "ms", device_class: "duration" }],
+      ["button.gw_restart", null, "unknown", { device_class: "restart" }],
+      ["button.gw_port_1_power_cycle", "port_power_cycle", "unknown", { device_class: "restart" }],
+      ...(wanPorts
+        ? [
+            ["sensor.gw_port_1_rx", "port_bandwidth_rx", "0.5", { unit_of_measurement: "Mbit/s", device_class: "data_rate", friendly_name: "Gateway Home Port 1 RX" }],
+            ["sensor.gw_port_1_tx", "port_bandwidth_tx", "0.2", { unit_of_measurement: "Mbit/s", device_class: "data_rate", friendly_name: "Gateway Home Port 1 TX" }],
+            ["sensor.gw_port_9_rx", "port_bandwidth_rx", "84.2", { unit_of_measurement: "Mbit/s", device_class: "data_rate", friendly_name: "Gateway Home WAN RX" }],
+            ["sensor.gw_port_9_tx", "port_bandwidth_tx", "12.6", { unit_of_measurement: "Mbit/s", device_class: "data_rate", friendly_name: "Gateway Home WAN TX" }],
+          ]
+        : []),
+      ["sensor.sw_state", "device_state", "connected", { device_class: "enum" }, "sw"],
+      ["sensor.sw_uptime", null, "2026-11-01T00:00:00+00:00", { device_class: "uptime" }, "sw"],
+      ["button.sw_restart", null, "unknown", { device_class: "restart" }, "sw"],
+      ["sensor.sw_port_1_rx", "port_bandwidth_rx", "900", { unit_of_measurement: "Mbit/s", device_class: "data_rate" }, "sw"],
+      ["sensor.ap_state", "device_state", "connected", { device_class: "enum" }, "ap"],
+      ["button.ap_restart", null, "unknown", { device_class: "restart" }, "ap"],
+    ],
+    ["laptop", "phone"]
+  );
+  hass.devices.sw = { id: "sw", name: "Switch Office", model: "USL16LP", config_entries: ["entry"] };
+  hass.devices.ap = { id: "ap", name: "AP Living", model: "U6LR", config_entries: ["entry"] };
+  // Client trackers without a device, as most UniFi clients are.
+  hass.states["device_tracker.tablet"] = { entity_id: "device_tracker.tablet", state: "not_home", attributes: {} };
+  hass.entities["device_tracker.tablet"] = { entity_id: "device_tracker.tablet", platform: "unifi" };
+  return hass;
+};
+
+test("UniFi: only the gateway is a box (not the switch nor the access point), with state, uptime, temperature, reboot", () => {
+  const hass = unifiHass();
+  assert.equal(listBoxes(hass).map((b) => b.value).join(), "box");
+  const box = discover(hass);
+  assert.equal(box.operator.platform, "unifi");
+  assert.equal(box.scalars.wan, "sensor.gw_state");
+  assert.equal(box.scalars.boot, "sensor.gw_uptime");
+  assert.equal(box.scalars.reboot, "button.gw_restart");
+  assert.equal(box.temps.map((x) => x.id).join(), "sensor.gw_cpu_temperature");
+  assert.equal(box.trackers.length, 3);
+  assert.equal(boxModel(box, {}).name, "Dream Machine Pro");
+});
+
+test("UniFi: the WAN port's bandwidth sensors are the rates, preferred over the other ports by their name", () => {
+  const box = discover(unifiHass());
+  assert.equal(box.scalars.rate_down, "sensor.gw_port_9_rx");
+  assert.equal(box.scalars.rate_up, "sensor.gw_port_9_tx");
+  // Without the bandwidth sensors: no rates, the box is still found (by its state sensor on a gateway model).
+  const none = discover(unifiHass("UDRULT", { wanPorts: false }));
+  assert.equal(none.id, "box");
+  assert.equal(none.scalars.rate_down, undefined);
+  assert.equal(boxModel(none, {}).name, "Cloud Gateway Ultra");
+});
+
+test("UniFi: the device state gives the status pill, online while connected", () => {
+  const hass = unifiHass();
+  assert.match(renderWith(InternetBoxCard, hass), /chip status clickable ok[^>]*data-entity="sensor\.gw_state"/);
+  hass.states["sensor.gw_state"].state = "disconnected";
+  assert.match(renderWith(InternetBoxCard, hass), /chip status clickable crit/);
+});
+
+test("UniFi: a gateway model unknown to the card is found by its WAN latency sensors and keeps its own name", () => {
+  const box = discover(unifiHass("XG9000"));
+  assert.equal(box.id, "box");
+  assert.equal(boxModel(box, {}).name, "XG9000");
+});

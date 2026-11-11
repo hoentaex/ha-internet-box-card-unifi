@@ -22,7 +22,7 @@ before(async () => {
 });
 after(() => browser?.close());
 
-for (const type of ["internet-box-card", "internet-box-mini-card"]) {
+for (const type of ["unifi-box-card", "unifi-box-mini-card"]) {
   test(`${type}: mark calls as read is reachable and the missed calls stay keyboard operable`, async (t) => {
     if (skip) return t.skip(skip);
     const page = await browser.newPage();
@@ -69,7 +69,7 @@ for (const type of ["internet-box-card", "internet-box-mini-card"]) {
   });
 }
 
-test("internet-box-mini-card: the missed calls stay visible at 0, plain and without the mark as read button", async (t) => {
+test("unifi-box-mini-card: the missed calls stay visible at 0, plain and without the mark as read button", async (t) => {
   if (skip) return t.skip(skip);
   const page = await browser.newPage();
   await page.setContent("<!doctype html><body><div id=root></div></body>");
@@ -77,8 +77,8 @@ test("internet-box-mini-card: the missed calls stay visible at 0, plain and with
   const res = await page.evaluate(
     ({ states, entities, devices }) => {
       const id = "sensor.freebox_missed_calls";
-      const el = document.createElement("internet-box-mini-card");
-      el.setConfig({ type: "custom:internet-box-mini-card" });
+      const el = document.createElement("unifi-box-mini-card");
+      el.setConfig({ type: "custom:unifi-box-mini-card" });
       el.hass = {
         states: { ...states, [id]: { ...states[id], state: "0" } },
         entities,

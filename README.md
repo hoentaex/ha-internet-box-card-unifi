@@ -1,4 +1,52 @@
-# ha-internet-box-card
+# UniFi Box Card
+
+Fork of [ha-internet-box-card](https://github.com/juju35/ha-internet-box-card) by juju35 that adds the **UniFi Network** integration: the card shows the gateway of a UniFi network (Dream Machine, Cloud Gateway, Next-Gen / Security Gateway, Express). Every integration of the original card keeps working. The cards are registered as `custom:unifi-box-card` and `custom:unifi-box-mini-card`, so they can be installed next to the original card.
+
+## UniFi Network
+
+| Shown | From |
+|---|---|
+| Status pill (online / offline) | the gateway's device state sensor (`connected`) |
+| Uptime | the gateway's uptime sensor |
+| Temperatures | the gateway's temperature sensors (CPU, local, PHY…) |
+| Restart button | the gateway's restart button (not the PoE power cycle buttons) |
+| Connected devices | the integration's client trackers |
+| Last speed test | the [Speedtest.net](https://www.home-assistant.io/integrations/speedtestdotnet/) integration, when set up |
+| Download / upload, 24 h curve | the gateway's WAN port bandwidth sensors, see below |
+
+Only a device whose model is a gateway (UDM…, UDR…, UCG…, UXG…, USG / UGW…, EFG, UX), or that has the WAN latency sensors only a gateway gets, is taken as the box: the switches and access points of the integration are left out.
+
+### Download / upload
+
+The UniFi Network integration has no WAN throughput sensor of its own; the port bandwidth sensors of the gateway give it:
+
+1. **Settings → Devices & services → UniFi Network → Configure**, and turn on the **bandwidth sensors** option (it also creates bandwidth sensors for the network clients).
+2. Open the gateway device and enable the **RX** and **TX** sensors of its WAN port (they are disabled by default), for example `Port 9` on a Dream Machine Pro, or `SFP+ 1` when the line is on that port.
+3. If you enable the bandwidth sensors of other ports too, name the WAN port "WAN" in the UniFi controller: the card prefers the port whose name contains "WAN", else it takes the first port with enabled sensors.
+
+RX is the download, TX the upload. Without these sensors the network section shows the last speed test only.
+
+### Installation (HACS)
+
+1. **HACS → ⋮ → Custom repositories**: add `https://github.com/hoentaex/ha-internet-box-card-unifi`, type **Dashboard**
+2. Open **UniFi Box Card** and click **Download**, then reload the browser
+3. Add the card: search for **UniFi Box Card** in the card picker, or
+
+```yaml
+type: custom:unifi-box-card
+```
+
+```yaml
+type: custom:unifi-box-mini-card
+```
+
+The options are those of the original card below; read `custom:unifi-box-card` where it says `custom:internet-box-card`.
+
+---
+
+*The original README follows.*
+
+## Original: ha-internet-box-card
 
 [![Marketplace](https://img.shields.io/badge/Marketplace-Custom-41BDF5.svg)](https://www.home-assistant.io/integrations/marketplace/)
 [![HACS Validation](https://github.com/juju35/ha-internet-box-card/actions/workflows/hacs.yml/badge.svg)](https://github.com/juju35/ha-internet-box-card/actions/workflows/hacs.yml)

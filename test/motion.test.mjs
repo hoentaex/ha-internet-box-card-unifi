@@ -44,11 +44,11 @@ async function motion(reducedMotion, type) {
   return res;
 }
 
-for (const type of ["internet-box-card", "internet-box-mini-card"]) {
+for (const type of ["unifi-box-card", "unifi-box-mini-card"]) {
   test(`${type}: no decorative motion when the system asks to reduce it`, async (t) => {
     if (skip) return t.skip(skip);
     const r = await motion("reduce", type);
-    if (type === "internet-box-card") assert.ok(r.bars.length > 0 && r.rings.length > 0);
+    if (type === "unifi-box-card") assert.ok(r.bars.length > 0 && r.rings.length > 0);
     for (const v of [...r.bars, ...r.rings]) assert.equal(v, "0s");
     for (const v of r.spins) assert.equal(v, "none");
   });

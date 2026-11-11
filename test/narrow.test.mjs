@@ -108,11 +108,11 @@ const MIN_TITLE = 32;
 
 test("the full card is readable at its minimum width, and its header at 6 columns", async (t) => {
   if (skip) return t.skip(skip);
-  const { minColumns } = await measure("internet-box-card", 500, "en");
+  const { minColumns } = await measure("unifi-box-card", 500, "en");
   assert.equal(minColumns, 9);
   for (const language of LANGS) {
     for (const width of [cols(minColumns), cols(6), 330]) {
-      const r = await measure("internet-box-card", width, language);
+      const r = await measure("unifi-box-card", width, language);
       const at = `${language} @ ${width}px`;
       assert.ok(r.name >= MIN_TITLE, `${at}: title ${r.name}px`);
       assert.deepEqual(r.covering, [], `${at}: title covered`);
@@ -130,7 +130,7 @@ test("the mini card is readable at its minimum width", async (t) => {
   if (skip) return t.skip(skip);
   for (const language of LANGS) {
     for (const width of [cols(6), 165, 240]) {
-      const r = await measure("internet-box-mini-card", width, language);
+      const r = await measure("unifi-box-mini-card", width, language);
       const at = `${language} @ ${width}px`;
       assert.equal(r.minColumns, 6);
       assert.ok(r.name >= MIN_TITLE, `${at}: title ${r.name}px`);
@@ -147,7 +147,7 @@ test("the partition name stays readable next to the disk model and the used / fr
   if (skip) return t.skip(skip);
   for (const language of ["en", "it", "nl", "pt", "pl", "sr"]) {
     for (const width of [cols(9), 330]) {
-      const { partition } = await measure("internet-box-card", width, language);
+      const { partition } = await measure("unifi-box-card", width, language);
       assert.ok(partition.length, "the mock has a partition");
       for (const p of partition) {
         // 5em of the 13 px row text.
@@ -165,9 +165,9 @@ test("the partition name stays readable next to the disk model and the used / fr
 test("no header button leaves the card in the zoomed mini card or around the 200 px step", async (t) => {
   if (skip) return t.skip(skip);
   const cases = [
-    ["internet-box-mini-card", true, [cols(6), 175, 201, 205, 220, cols(9), 245], [24, 24]],
-    ["internet-box-mini-card", false, [201, 203, 205, 210], [24]],
-    ["internet-box-card", false, [201, 204, 210, 220], [24]],
+    ["unifi-box-mini-card", true, [cols(6), 175, 201, 205, 220, cols(9), 245], [24, 24]],
+    ["unifi-box-mini-card", false, [201, 203, 205, 210], [24]],
+    ["unifi-box-card", false, [201, 204, 210, 220], [24]],
   ];
   for (const [type, zoom, widths, buttons] of cases)
     for (const language of ["en", "pl", "sr-Latn", "el"])
@@ -190,7 +190,7 @@ test("the status pill shows its whole text from 245 px up", async (t) => {
   if (skip) return t.skip(skip);
   for (const language of ["en", "pl", "sr-Latn", "fr", "el"])
     for (const width of [245, 260, 261, 265, 270, 276, 280, 300, 320, 380, 441, 460, 500])
-      for (const [type, zoom] of [["internet-box-card", false], ["internet-box-mini-card", true]])
+      for (const [type, zoom] of [["unifi-box-card", false], ["unifi-box-mini-card", true]])
         for (const unavailable of [false, true]) {
           const r = await measure(type, width, language, { zoom, unavailable });
           const at = `${type}${zoom ? " (zoomed)" : ""} ${language} @ ${width}px${unavailable ? " unavailable" : ""}`;
@@ -201,7 +201,7 @@ test("the status pill shows its whole text from 245 px up", async (t) => {
   for (const language of ["es", "de", "sr", "fr", "el", "bg", "uk", "sl"])
     for (const width of [245, 261, 280, 300, 322, 340, 341, 380, 441])
       for (const offline of [false, true]) {
-        const r = await measure("internet-box-card", width, language, { offline });
+        const r = await measure("unifi-box-card", width, language, { offline });
         assert.equal(r.pillText, r.pillLabel, `${language} @ ${width}px${offline ? " offline" : ""}: pill`);
       }
 });
@@ -210,7 +210,7 @@ test("the status pill shows its whole text from 245 px up", async (t) => {
 // button-card do), the card keeps a usable width instead of collapsing around its size container.
 test("the cards keep their minimum width in a container sized by its content", async (t) => {
   if (skip) return t.skip(skip);
-  for (const [type, min] of [["internet-box-card", cols(9)], ["internet-box-mini-card", cols(6)]])
+  for (const [type, min] of [["unifi-box-card", cols(9)], ["unifi-box-mini-card", cols(6)]])
     for (const wrapper of ["display:inline-block", "display:grid;grid-template-columns:auto", "display:flex;align-items:flex-start"]) {
       const page = await browser.newPage();
       await page.setContent(`<!doctype html><body style="margin:0;font-family:sans-serif"><div style="${wrapper}"><div id=root></div></div></body>`);
@@ -236,7 +236,7 @@ test("the cards keep their minimum width in a container sized by its content", a
 // width (it would overflow), never 0 px.
 test("two cards side by side in 1fr 1fr columns share the width without overflowing", async (t) => {
   if (skip) return t.skip(skip);
-  for (const type of ["internet-box-card", "internet-box-mini-card"])
+  for (const type of ["unifi-box-card", "unifi-box-mini-card"])
     for (const total of [320, 360, 500]) {
       const page = await browser.newPage();
       await page.setContent(
@@ -285,9 +285,9 @@ test("in a container sized by its content or a 1fr 1fr grid, direct or in a div,
         ...[320, 360, 500].map((w) => [`grid 1fr 1fr ${w}px`, `display:grid;grid-template-columns:1fr 1fr;gap:8px;width:${w}px`, 2]),
       ];
       for (const [type, zoom, min] of [
-        ["internet-box-card", false, 240],
-        ["internet-box-mini-card", false, 160],
-        ["internet-box-mini-card", true, 240],
+        ["unifi-box-card", false, 240],
+        ["unifi-box-mini-card", false, 160],
+        ["unifi-box-mini-card", true, 240],
       ])
         for (const wrapped of [false, true])
           for (const [name, css, n] of contexts) {

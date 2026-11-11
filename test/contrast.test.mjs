@@ -126,7 +126,7 @@ async function measure(type, theme, mock) {
 
 const MIN = { tileIcons: 3, dialogIcon: 3, footIcons: 3, chips: 4.5, danger: 4.5, footText: 4.5 };
 const MOCKS = { freebox: { states, entities, devices, config: {} }, ...operators };
-for (const type of ["internet-box-card", "internet-box-mini-card"])
+for (const type of ["unifi-box-card", "unifi-box-mini-card"])
   for (const theme of Object.keys(THEMES))
     for (const [name, mock] of Object.entries(MOCKS))
       test(`${type}, ${name}, ${theme} theme: accent and state colours are readable`, async (t) => {
@@ -134,7 +134,7 @@ for (const type of ["internet-box-card", "internet-box-mini-card"])
         const r = await measure(type, theme, mock);
         // The mini card has tiles only for the rates: a box without rate sensors (Swisscom, Sagemcom F@st) has none.
         const rates = Object.values(mock.states).some((s) => s.attributes?.device_class === "data_rate" || /bandwidth|speed/.test(s.entity_id));
-        if (type === "internet-box-card" || rates) assert.ok(r.tileIcons.length > 0);
+        if (type === "unifi-box-card" || rates) assert.ok(r.tileIcons.length > 0);
         const low = Object.entries(r).flatMap(([k, list]) =>
           list.filter((v) => v < MIN[k]).map((v) => `${k} ${v.toFixed(2)}:1 < ${MIN[k]}:1`)
         );

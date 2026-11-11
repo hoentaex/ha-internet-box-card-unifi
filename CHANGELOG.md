@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.1.0-unifi.1 - 2026-11-11
+
+### Features
+- **UniFi Network** (`unifi`, built in): the gateway of a UniFi network (Dream Machine, Cloud Gateway, Next-Gen / Security Gateway, Express) is a box. Its device state gives the status pill (online while connected), with its uptime, temperatures, restart button, connected clients and the Speedtest.net results. The switches and access points of the integration are never taken for a box.
+- Download / upload from the gateway's WAN port bandwidth sensors (`port_bandwidth_rx` / `_tx`): they need the integration's bandwidth sensors option and are disabled by default; the port named "WAN" is preferred when several ports have them enabled.
+
+### Breaking changes
+- The cards are registered as `custom:unifi-box-card` and `custom:unifi-box-mini-card` (not `internet-box-card`, nor the former `freebox-card` types), so that this fork can be installed next to the original card.
+
 ## 3.1.0 - 2026-11-10
 
 ### Features

@@ -62,18 +62,18 @@ const page_html = (theme, width) => `<!doctype html><html><head><meta charset="u
 </style></head><body><div id="root"></div></body></html>`;
 
 const shots = [
-  { file: "card", type: "internet-box-card", theme: "light", width: 460, config: {} },
-  { file: "card-dark", type: "internet-box-card", theme: "dark", width: 460, config: {} },
-  { file: "mini-card", type: "internet-box-mini-card", theme: "light", width: 380, config: {} },
-  { file: "mini-card-dark", type: "internet-box-mini-card", theme: "dark", width: 380, config: {} },
+  { file: "card", type: "unifi-box-card", theme: "light", width: 460, config: {} },
+  { file: "card-dark", type: "unifi-box-card", theme: "dark", width: 460, config: {} },
+  { file: "mini-card", type: "unifi-box-mini-card", theme: "light", width: 380, config: {} },
+  { file: "mini-card-dark", type: "unifi-box-mini-card", theme: "dark", width: 380, config: {} },
   // The mini card after a click on its detail button: the full card in its place.
-  { file: "mini-card-zoom", type: "internet-box-mini-card", theme: "light", width: 460, config: {}, zoom: true },
-  { file: "mini-card-zoom-dark", type: "internet-box-mini-card", theme: "dark", width: 460, config: {}, zoom: true },
+  { file: "mini-card-zoom", type: "unifi-box-mini-card", theme: "light", width: 460, config: {}, zoom: true },
+  { file: "mini-card-zoom-dark", type: "unifi-box-mini-card", theme: "dark", width: 460, config: {}, zoom: true },
 ];
 // The full card for each other operator, with the sensors its integration exposes.
 for (const [name, mock] of Object.entries(operators))
   for (const theme of ["light", "dark"])
-    shots.push({ file: `card-${name}${theme === "dark" ? "-dark" : ""}`, type: "internet-box-card", theme, width: 460, config: mock.config, mock });
+    shots.push({ file: `card-${name}${theme === "dark" ? "-dark" : ""}`, type: "unifi-box-card", theme, width: 460, config: mock.config, mock });
 
 // Mount one card on a fresh page and return it (shared by the stills and the GIF). Keeps the fixed clock and the
 // UTC time zone so the card's uptime and times render the same every run.
@@ -136,8 +136,8 @@ for (const s of shots) {
 // frames change.
 // Recorded in both themes with the same setup: fan.gif light, fan-dark.gif dark.
 const gifs = [
-  { file: "fan", type: "internet-box-card", theme: "light", width: 460, config: {} },
-  { file: "fan-dark", type: "internet-box-card", theme: "dark", width: 460, config: {} },
+  { file: "fan", type: "unifi-box-card", theme: "light", width: 460, config: {} },
+  { file: "fan-dark", type: "unifi-box-card", theme: "dark", width: 460, config: {} },
 ];
 const FPS = 20;
 const SECONDS = 3;

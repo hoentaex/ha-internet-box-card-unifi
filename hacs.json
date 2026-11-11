@@ -1,5 +1,5 @@
 {
-  "name": "Internet Box Card",
+  "name": "UniFi Box Card",
   "render_readme": true,
   "content_in_root": false,
   "filename": "internet-box-card.js",

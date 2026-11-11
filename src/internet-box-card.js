@@ -1,9 +1,10 @@
 /*
- * Internet Box Card for Home Assistant
- * https://github.com/juju35/ha-internet-box-card
+ * UniFi Box Card for Home Assistant: fork of the Internet Box Card (https://github.com/juju35/ha-internet-box-card)
+ * with the UniFi Network gateways, registered as unifi-box-card / unifi-box-mini-card.
+ * https://github.com/hoentaex/ha-internet-box-card-unifi
  *
  * Lovelace cards for internet boxes: the Freebox, Livebox (Orange, KPN), SFR Box, Bbox (Bouygues), FRITZ!Box,
- * Vodafone Station, Swisscom Internet-Box, Sagemcom F@st, Huawei LTE, ZTE Hyperbox and Starlink integrations.
+ * Vodafone Station, Swisscom Internet-Box, Sagemcom F@st, Huawei LTE, ZTE Hyperbox, Starlink and UniFi Network integrations.
  * Entities are discovered automatically from the entity registry (integration platform and translation key),
  * whatever the language and the entity ids; the legacy Bbox integration is found by entity id.
  */
@@ -2393,6 +2394,40 @@ const OPERATORS = {
     keys: { rate_down: "downlink_throughput", rate_up: "uplink_throughput", boot: "last_restart" },
     wanClass: true,
   },
+  // UniFi Network (unifi, built in): the gateway of a UniFi network (Dream Machine, Cloud Gateway, Next-Gen / Security
+  // Gateway, Express). The integration also creates the switches and access points as devices with the same kind of
+  // entities (state, uptime, restart button): only a device whose model is a gateway (`gateway`), or that has the WAN
+  // latency sensors only a gateway gets (`gatewayKeys`), is a box. Its link state is the device state sensor (an enum,
+  // "connected" when online: `wanOn`), the uptime a boot date without translation key, the temperatures and the restart
+  // button (device_class restart, no key) are found by their class. The throughput comes from the port bandwidth sensors
+  // (port_bandwidth_rx / _tx), created only with the integration's "bandwidth sensors" option and disabled by default:
+  // the WAN port's pair, preferred by its name ("WAN"), else the first port whose sensors are enabled.
+  unifi: {
+    platform: "unifi", name: "UniFi", color: "#006fff", logo: "__IMG_FILE:unifi.svg__",
+    website: "https://unifi.ui.com", admin: "https://unifi.ui.com",
+    gateway: /^(udm|udr|udw|ucg|uxg|usg|ugw|efg|ux\d*$)/i, gatewayKeys: ["wan_latency"],
+    models: [
+      { id: "unifi_udm_pro_max", name: "Dream Machine Pro Max", re: /\budm\s*-?\s*pro\s*-?\s*max|udma6a8/i, pic: "generic_tower" },
+      { id: "unifi_udm_pro_se", name: "Dream Machine Pro SE", re: /\budm\s*-?\s*pro\s*-?\s*se|udmprose/i, pic: "generic_tower" },
+      { id: "unifi_udm_pro", name: "Dream Machine Pro", re: /\budm\s*-?\s*pro/i, pic: "generic_tower" },
+      { id: "unifi_udm_se", name: "Dream Machine SE", re: /\budm\s*-?\s*se/i, pic: "generic_tower" },
+      { id: "unifi_cloud_gateway_ultra", name: "Cloud Gateway Ultra", re: /\budrult|\bucg\s*-?\s*ultra/i, pic: "generic_router" },
+      { id: "unifi_cloud_gateway_max", name: "Cloud Gateway Max", re: /\bucg\s*-?\s*max/i, pic: "generic_router" },
+      { id: "unifi_cloud_gateway_fiber", name: "Cloud Gateway Fiber", re: /\bucg\s*-?\s*f/i, pic: "generic_router" },
+      { id: "unifi_dream_router", name: "Dream Router", re: /\budr/i, pic: "generic_hub" },
+      { id: "unifi_dream_wall", name: "Dream Wall", re: /\budw/i, pic: "generic_hub" },
+      { id: "unifi_udm", name: "Dream Machine", re: /\budm/i, pic: "generic_hub" },
+      { id: "unifi_express", name: "UniFi Express", re: /\bux\d*\b/i, pic: "generic_hub" },
+      { id: "unifi_next_gen_gateway", name: "Next-Gen Gateway", re: /\buxg/i, pic: "generic_router" },
+      { id: "unifi_security_gateway", name: "Security Gateway", re: /\b(usg|ugw)/i, pic: "generic_router" },
+      { id: "unifi_gateway", name: "UniFi Gateway", re: /./, pic: "generic_router", fromDevice: true },
+    ],
+    keys: { wan: "device_state" },
+    wanOn: "connected",
+    alt: { rate_down: /^port_bandwidth_rx$/, rate_up: /^port_bandwidth_tx$/ },
+    altPrefer: /(^|[^a-z])wan\d?([^a-z]|$)/i,
+    bootClass: true,
+  },
 };
 
 // Internet providers that ship a box supported through another integration (its model's `brand`): their name,
@@ -2751,6 +2786,17 @@ const isAlt = (op, e, slot) =>
   !!(op.alt?.[slot] && (!/^rate_/.test(slot) || e.entity_id.startsWith("sensor.")) && op.alt[slot].test(e.translation_key || ""));
 const isAltRate = isAlt;
 
+/** Entity kept for an alternate-key rate slot, between the one already there and a new match: the first one found,
+ *  unless the new one's name or id matches the operator's preferred pattern and the kept one does not (the UniFi
+ *  gateway's WAN port among the ports whose bandwidth sensors are enabled). */
+const altPick = (hass, op, cur, id) => {
+  if (!cur) return id;
+  const pref = op.altPrefer;
+  if (!pref) return cur;
+  const named = (x) => pref.test(x) || pref.test(hass.states[x]?.attributes?.friendly_name || "");
+  return !named(cur) && named(id) ? id : cur;
+};
+
 // Integrations whose keys the card does not know (`guess`): rate sensors told apart by their translation key or id.
 const GUESS_DOWN = /down|rx\b|_rx|receiv/i;
 const GUESS_UP = /(^|[^a-z])up(load|link|_|$)|tx\b|_tx|sent|send/i;
@@ -2769,10 +2815,19 @@ const isRateDown = (op, e) =>
   isAltRate(op, e, "rate_down") ||
   (op.legacy?.rate_down?.test(e.entity_id));
 
+/** For an integration whose gateway shares its kind of entities with other network devices (UniFi switches and
+ *  access points): true when the entity is the gateway's link state sensor on a device whose model is a gateway, or
+ *  one of the entities only a gateway gets (its WAN latency sensors). */
+const isGatewayMark = (hass, op, e) =>
+  (!!op.keys.wan && e.translation_key === op.keys.wan && op.gateway.test(hass.devices?.[e.device_id]?.model || "")) ||
+  (op.gatewayKeys || []).includes(e.translation_key);
+
 /** True when an entity marks the box device: its download rate (see isRateDown), else, for an integration whose box
  *  has no rate sensor, its restart button (Sagemcom F@st), or a guessed download rate (ZTE Hyperbox). */
 const isAnchor = (hass, op, e) =>
-  isRateDown(op, e) ||
+  op.gateway
+    ? isGatewayMark(hass, op, e)
+    : isRateDown(op, e) ||
   (op.anchorRestart && e.entity_id.startsWith("button.") && !e.translation_key && hass.states[e.entity_id]?.attributes?.device_class === "restart") ||
   (op.guess && guessRate(hass, e) === "down");
 
@@ -2960,15 +3015,16 @@ const discover = (hass, boxId) => {
         // missed-calls sensor over the total of calls.
         if ((keys.rate_down && k === keys.rate_down) || (legacy?.rate_down?.test(id))) box.scalars.rate_down = id;
         else if ((keys.rate_up && k === keys.rate_up) || (legacy?.rate_up?.test(id))) box.scalars.rate_up = id;
-        else if (isAltRate(op, e, "rate_down")) box.scalars.rate_down ??= id;
-        else if (isAltRate(op, e, "rate_up")) box.scalars.rate_up ??= id;
+        else if (isAltRate(op, e, "rate_down")) box.scalars.rate_down = altPick(hass, op, box.scalars.rate_down, id);
+        else if (isAltRate(op, e, "rate_up")) box.scalars.rate_up = altPick(hass, op, box.scalars.rate_up, id);
         else if (own && op.guess && guessRate(hass, e) === "down") box.scalars.rate_down ??= id;
         else if (own && op.guess && guessRate(hass, e) === "up") box.scalars.rate_up ??= id;
         else if (keys.sync_down && k === keys.sync_down) box.scalars.sync_down = id;
         else if (keys.sync_up && k === keys.sync_up) box.scalars.sync_up = id;
         else if (keys.missed && k === keys.missed) box.scalars.missed = id;
         else if (keys.missed_total && k === keys.missed_total) box.scalars.missed_total = id;
-        else if (domain === "binary_sensor" && keys.wan && k === keys.wan) box.scalars.wan = id;
+        // The WAN state is a connectivity binary sensor, or a sensor whose state names the online state (`wanOn`, UniFi).
+        else if ((domain === "binary_sensor" || (op.wanOn && domain === "sensor" && own)) && keys.wan && k === keys.wan) box.scalars.wan = id;
         // A connectivity binary sensor without translation key (Starlink, the guessed ZTE one) when the operator has
         // no keyed WAN sensor.
         else if (own && domain === "binary_sensor" && (op.wanClass || op.guess) && !k && a.device_class === "connectivity") box.scalars.wan ??= id;
@@ -3310,7 +3366,7 @@ class InternetBoxBase extends HTMLElement {
   _call(domain, service, entityId) {
     Promise.resolve()
       .then(() => this._hass?.callService(domain, service, { entity_id: entityId }))
-      .catch((err) => console.error(`internet-box-card: ${domain}.${service} failed`, err));
+      .catch((err) => console.error(`unifi-box-card: ${domain}.${service} failed`, err));
   }
 
   // Presses a Home Assistant button entity.
@@ -3578,7 +3634,7 @@ class InternetBoxBase extends HTMLElement {
     const type = this._linkType(box);
     const real = [this._s(sc.wan), this._s(sc.line)].find((s) => s && !noValue(s));
     if (real) {
-      if (real.state === "on") return { entity: real.entity_id, cls: "ok", key: "online", type };
+      if (real.state === "on" || (box.operator?.wanOn && real.state === box.operator.wanOn)) return { entity: real.entity_id, cls: "ok", key: "online", type };
       const training = this._s(sc.training);
       if (training && !noValue(training) && !["showtime", "idle"].includes(training.state))
         return { entity: training.entity_id, cls: "warn", key: "syncing", type };
@@ -3779,7 +3835,7 @@ const FULL_STYLE = `
 
 class InternetBoxCard extends InternetBoxBase {
   static getConfigElement() {
-    return document.createElement("internet-box-card-editor");
+    return document.createElement("unifi-box-card-editor");
   }
 
   static getStubConfig(hass) {
@@ -3999,7 +4055,7 @@ const MINI_STYLE = `
 // same configuration, and back; a click anywhere outside the card (or a dialog opened from it) brings it back too.
 class InternetBoxMiniCard extends InternetBoxCard {
   static getConfigElement() {
-    return document.createElement("internet-box-mini-card-editor");
+    return document.createElement("unifi-box-mini-card-editor");
   }
 
   constructor() {
@@ -4306,37 +4362,32 @@ class InternetBoxMiniCardEditor extends InternetBoxEditorBase {
 const define = (name, cls) => {
   if (!customElements.get(name)) customElements.define(name, cls);
 };
-define("internet-box-card", InternetBoxCard);
-define("internet-box-mini-card", InternetBoxMiniCard);
-// Former types, kept so that existing dashboards keep working: same cards under another name. A custom element class
-// can only be defined once, hence the subclasses.
-for (const [name, base] of [
-  ["freebox-card", InternetBoxCard],
-  ["freebox-mini-card", InternetBoxMiniCard],
-])
-  define(name, class extends base {});
-define("internet-box-card-editor", InternetBoxCardEditor);
-define("internet-box-mini-card-editor", InternetBoxMiniCardEditor);
+define("unifi-box-card", InternetBoxCard);
+define("unifi-box-mini-card", InternetBoxMiniCard);
+// UniFi fork: the cards are registered under their own types (unifi-box-card…), and without the former freebox-card
+// types, so that they live next to the original Internet Box Card when both are installed.
+define("unifi-box-card-editor", InternetBoxCardEditor);
+define("unifi-box-mini-card-editor", InternetBoxMiniCardEditor);
 
 window.customCards = window.customCards || [];
 for (const card of [
   {
-    type: "internet-box-card",
-    name: "Internet Box Card",
-    description: "Monitor an internet box (Freebox, Livebox, SFR Box, Bbox, FRITZ!Box, Vodafone Station, Swisscom, Sagemcom F@st, Huawei LTE, ZTE Hyperbox, Starlink): download / upload, temperatures, fans, storage, Wi-Fi, calls and connected devices.",
+    type: "unifi-box-card",
+    name: "UniFi Box Card",
+    description: "Monitor a UniFi gateway (Dream Machine, Cloud Gateway…) or another internet box: link state, download / upload, temperatures, uptime, speed test and connected devices.",
   },
   {
-    type: "internet-box-mini-card",
-    name: "Internet Box Mini Card",
-    description: "Compact internet box overview (Freebox, Livebox, SFR Box, Bbox, FRITZ!Box, Vodafone Station, Swisscom, Sagemcom F@st, Huawei LTE, ZTE Hyperbox, Starlink): download / upload, connection, temperature, Wi-Fi and uptime, with a button to show the full card.",
+    type: "unifi-box-mini-card",
+    name: "UniFi Box Mini Card",
+    description: "Compact overview of a UniFi gateway or another internet box: download / upload, connection, temperature and uptime, with a button to show the full card.",
   },
 ]) {
   if (!window.customCards.some((c) => c.type === card.type))
-    window.customCards.push({ ...card, preview: true, documentationURL: "https://github.com/juju35/ha-internet-box-card" });
+    window.customCards.push({ ...card, preview: true, documentationURL: "https://github.com/hoentaex/ha-internet-box-card-unifi" });
 }
 
 console.info(
-  `%c INTERNET-BOX-CARD %c v${VERSION} `,
+  `%c UNIFI-BOX-CARD %c v${VERSION} `,
   "color: white; background: #455a64; font-weight: 700;",
   "color: #455a64; background: white; font-weight: 700;"
 );
