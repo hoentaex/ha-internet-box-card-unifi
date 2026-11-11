@@ -898,7 +898,7 @@ test("Wi-Fi switch: turns the Wi-Fi on at once, off only after the confirmation 
   assert.deepEqual(calls, []);
 });
 
-test("the last Speedtest.net test is a section of its own (download, upload, ping tiles), hidden with show_speedtest: false", async () => {
+test("the last Speedtest.net test is a section of its own (download and upload tiles, ping pill, time), hidden with show_speedtest: false", async () => {
   const el = await mockCard({});
   const add = (id, key, state, unit) => {
     el._hass.entities[id] = { entity_id: id, platform: "speedtestdotnet", translation_key: key };
@@ -909,10 +909,11 @@ test("the last Speedtest.net test is a section of its own (download, upload, pin
   add("sensor.speedtest_ping", "ping", "9.4", "ms");
   assert.doesNotMatch(el._network({ scalars: { router: ROUTER_ID } }), /speedtest/);
   const html = el._speedtest();
-  assert.match(html, /class="section-title">.*Speed test<span class="when">/);
+  assert.match(html, /class="section-title">.*Speed test<span class="chip ping clickable"[^>]*data-entity="sensor\.speedtest_ping"[^>]*>.*Ping 9 ms<\/span><\/div>/);
+  assert.match(html, /<div class="grid2">.*tile down[\s\S]*tile up[\s\S]*<\/div>\s*<div class="facts"><span><svg[\s\S]*?<\/svg>[^<]*09[^<]*<\/span><\/div>/);
   assert.match(html, /tile down clickable[^>]*data-entity="sensor\.speedtest_download"[\s\S]*?<div class="v">106 MB\/s<\/div>/);
   assert.match(html, /tile up clickable[^>]*data-entity="sensor\.speedtest_upload"[\s\S]*?<div class="v">64\.0 MB\/s<\/div>/);
-  assert.match(html, /tile lat clickable[^>]*data-entity="sensor\.speedtest_ping"[\s\S]*?<div class="v">9 ms<\/div>/);
+  assert.doesNotMatch(html, /tile lat/);
   el._config = { ...el._config, rate_unit: "bits" };
   assert.match(el._speedtest(), /845 Mb\/s/);
   el._config = { ...el._config, show_speedtest: false };

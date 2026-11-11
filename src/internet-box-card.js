@@ -598,6 +598,7 @@ const ICONS = {
   fan: "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z",
   // mdi:speedometer, for the last speed test.
   speedtest: "M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z",
+  clock: "M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z",
   timer: "M12,20A7,7 0 0,1 5,13A7,7 0 0,1 12,6A7,7 0 0,1 19,13A7,7 0 0,1 12,20M19.03,7.39L20.45,5.97C20,5.46 19.55,5 19.04,4.56L17.62,6C16.07,4.74 14.12,4 12,4A9,9 0 0,0 3,13A9,9 0 0,0 12,22C17,22 21,17.97 21,13C21,10.88 20.26,8.93 19.03,7.39M11,14H13V8H11M15,1H9V3H15V1Z",
   network: "M13,19H14A1,1 0 0,1 15,20H22V22H15A1,1 0 0,1 14,23H10A1,1 0 0,1 9,22H2V20H9A1,1 0 0,1 10,19H11V17H4A1,1 0 0,1 3,16V12A1,1 0 0,1 4,11H20A1,1 0 0,1 21,12V16A1,1 0 0,1 20,17H13V19M4,3H20A1,1 0 0,1 21,4V8A1,1 0 0,1 20,9H4A1,1 0 0,1 3,8V4A1,1 0 0,1 4,3M9,7H10V5H9V7M9,15H10V13H9V15M5,5V7H7V5H5M5,13V15H7V13H5Z",
   ip: "M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z",
@@ -3883,19 +3884,13 @@ const FULL_STYLE = `
   .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 6px; }
   .gauge { display: flex; flex-direction: column; align-items: center; position: relative; }
   .gauge .val .icon { width: 12px; height: 12px; color: var(--secondary-text-color); }
-  .gauge.use { isolation: isolate; border-radius: 10px; overflow: hidden; }
   .gauge.use:not(.ok, .warn, .crit) { --c: var(--ibc-accent); }
-  /* CPU / RAM: the ring and its label at the top, the 24 h chart in a band of its own at the bottom. The other
-     gauges of the row get the same top padding, so all rings stay on one line. */
-  .gauges:has(.use) .gauge { padding-top: 8px; }
-  .gauges:has(.use) .gauge .val { top: 8px; }
-  .gauge.use { padding-bottom: 34px; background: var(--secondary-background-color, rgba(127,127,127,.08)); }
-  .gauge .spark { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 30px; z-index: -1; pointer-events: none; }
   .gauge.use .val { flex-direction: column; }
   .lats { margin-top: 6px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
   .tile.lat { --c: var(--accent-color, #ff9800); }
-  .lats.speed { margin-top: 0; }
-  .section-title .when { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  /* The speed test's ping, a pill at the end of the section title. */
+  .section-title .chip.ping { --c: var(--accent-color, #ff9800); margin-left: auto; text-transform: none; letter-spacing: 0; }
+  .section-title .chip.ping .icon { width: 14px; height: 14px; }
   .ring { width: 52px; height: 52px; transform: rotate(-90deg); }
   .ring circle { fill: none; stroke-width: 6; }
   .ring .track { stroke: var(--divider-color, rgba(127,127,127,.25)); }
@@ -3989,7 +3984,7 @@ class InternetBoxCard extends InternetBoxBase {
     const hist = this._fullHistory(box);
     if (c.show_network !== false) parts.push(this._network(box, hist));
     if (c.show_speedtest !== false) parts.push(this._speedtest(hist));
-    if (c.show_system !== false) parts.push(this._system(box, hist));
+    if (c.show_system !== false) parts.push(this._system(box));
     if (c.show_storage !== false) parts.push(this._storage(box));
     if (c.show_services !== false) parts.push(this._services(box));
     return `<style>${BASE_STYLE}${FULL_STYLE}</style>
@@ -4007,7 +4002,6 @@ class InternetBoxCard extends InternetBoxBase {
     const sc = box.scalars;
     const ids = [
       ...(c.show_network !== false ? [sc.rate_down, sc.rate_up, ...this._latencies(box).map((x) => x.id)] : []),
-      ...(c.show_system !== false ? [sc.cpu, sc.ram] : []),
       ...(c.show_speedtest !== false ? Object.values(discoverSpeedtest(this._hass) || {}) : []),
     ].filter(Boolean);
     return ids.length ? this._history(ids) : null;
@@ -4064,8 +4058,8 @@ class InternetBoxCard extends InternetBoxBase {
     </div>`;
   }
 
-  // The last Speedtest.net test, a section of its own: download, upload and ping tiles, each with the results of the
-  // last 24 hours behind it; the time of the test next to the title.
+  // The last Speedtest.net test, a section of its own: a download and an upload tile side by side, each with the
+  // results of the last 24 hours under it, the ping as a pill next to the title and the time of the test under the tiles.
   _speedtest(hist = null) {
     const sp = discoverSpeedtest(this._hass);
     if (!sp) return "";
@@ -4082,23 +4076,27 @@ class InternetBoxCard extends InternetBoxBase {
     const tiles = [
       tile(dl, "down", ICONS.down, this._t("download"), dl && fmtRate(toBps(dl), this._hass, this._config)),
       tile(ul, "up", ICONS.up, this._t("upload"), ul && fmtRate(toBps(ul), this._hass, this._config)),
-      tile(ping, "lat", ICONS.timer, "Ping", pingMs === null ? "—" : `${Math.round(pingMs)} ms`),
     ].filter(Boolean);
-    if (!tiles.length) return "";
+    const pill =
+      ping && pingMs !== null
+        ? `<span class="chip ping clickable" role="button" tabindex="0" data-entity="${ping.entity_id}">${svgIcon(ICONS.timer)}Ping ${Math.round(pingMs)} ms</span>`
+        : "";
+    if (!tiles.length && !pill) return "";
     const when = [dl, ul, ping].find((s) => s && !noValue(s))?.last_changed;
     const at = when
       ? new Date(when).toLocaleString(numLang(this._hass, this._config), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
       : "";
     return `<div>
-      <div class="section-title">${svgIcon(ICONS.speedtest)}${this._t("speedtest")}${at ? `<span class="when">${esc(at)}</span>` : ""}</div>
-      <div class="tiles lats speed">${tiles.join("")}</div>
+      <div class="section-title">${svgIcon(ICONS.speedtest)}${this._t("speedtest")}${pill}</div>
+      ${tiles.length ? `<div class="grid2">${tiles.join("")}</div>` : ""}
+      ${at ? `<div class="facts"><span>${svgIcon(ICONS.clock)}${esc(at)}</span></div>` : ""}
     </div>`;
   }
 
-  _system(box, hist = null) {
+  _system(box) {
     const sc = box.scalars;
     if (!box.temps.length && !box.fans.length && !sc.cpu && !sc.ram) return "";
-    // CPU and RAM use (UniFi gateway): a gauge each, with its last 24 hours behind it on a 0-100 % scale.
+    // CPU and RAM use (UniFi gateway): a gauge each, like the temperatures.
     const usage = [
       [sc.cpu, "cpu"],
       [sc.ram, "ram"],
@@ -4106,11 +4104,7 @@ class InternetBoxCard extends InternetBoxBase {
       .filter(([id]) => id)
       .map(([id, metric]) => {
         const v = num(this._s(id));
-        return `<div class="gauge use clickable ${this._level(v, metric)}" role="button" tabindex="0" data-key="${id}" data-entity="${id}">${spark(
-          hist?.[id],
-          hist?.end,
-          100
-        )}
+        return `<div class="gauge use clickable ${this._level(v, metric)}" role="button" tabindex="0" data-entity="${id}">
         ${ring(v)}
         <div class="val">${svgIcon(ICONS[metric])}<b>${v === null ? "—" : `${Math.round(v)}%`}</b></div>
         <div class="lbl">${this._t(metric)}</div>

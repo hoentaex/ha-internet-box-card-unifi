@@ -5,7 +5,8 @@
 ### Changes
 - The status pill ("Connected") stays top right, next to the title, down to 340 px wide cards; the box picture gives way to it up to 440 px.
 - Tiles with a chart are taller: label and value at the top, the 24 h chart in a band of its own under them.
-- The CPU and RAM gauges are boxes like the tiles: the ring at the top, free of the chart, which sits in a band at the bottom.
+- The CPU and RAM gauges are plain rings again, like the temperatures, without a chart.
+- Speed test: download and upload side by side, the ping as a pill next to the section title and the time of the test under the tiles.
 
 ## 3.1.0-unifi.4 - 2026-11-11
 
