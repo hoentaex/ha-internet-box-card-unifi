@@ -3916,7 +3916,7 @@ const ring = (pct) => {
 
 const FULL_STYLE = `
   .content { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 20px; }
-  .section-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; text-transform: uppercase;
+  .section-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; text-transform: uppercase;
                    letter-spacing: .04em; color: var(--secondary-text-color); margin-bottom: 6px; }
   .section-title .icon { width: 16px; height: 16px; }
   .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
@@ -3925,22 +3925,29 @@ const FULL_STYLE = `
   .facts { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; margin-top: 6px; }
   .facts > span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
   .facts .icon { width: 14px; height: 14px; color: var(--secondary-text-color); }
-  .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 6px; }
+  .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 6px; }
   .gauge { display: flex; flex-direction: column; align-items: center; position: relative; }
-  .gauge .val .icon { width: 12px; height: 12px; color: var(--secondary-text-color); }
+  .gauge .val .icon { width: 14px; height: 14px; color: var(--secondary-text-color); }
   .gauge.use:not(.ok, .warn, .crit) { --c: var(--ibc-accent); }
   .gauge.use .val { flex-direction: column; }
   .lats { margin-top: 6px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
   .tile.lat { --c: var(--accent-color, #ff9800); }
   /* The speed test's ping, a pill at the end of the section title. */
-  .section-title .chip.ping { --c: var(--accent-color, #ff9800); margin-left: auto; text-transform: none; letter-spacing: 0; }
+  .section-title .chip.ping { --c: var(--accent-color, #ff9800); margin-left: auto; flex: none; white-space: nowrap; text-transform: none; letter-spacing: 0; }
   .section-title .chip.ping .icon { width: 14px; height: 14px; }
-  .ring { width: 52px; height: 52px; transform: rotate(-90deg); }
-  .ring circle { fill: none; stroke-width: 6; }
+  .ring { width: 72px; height: 72px; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 5; }
   .ring .track { stroke: var(--divider-color, rgba(127,127,127,.25)); }
   .ring .value { stroke: var(--c, var(--ibc-accent)); stroke-linecap: round; transition: stroke-dasharray .6s ease; }
-  .gauge .val { position: absolute; top: 0; height: 52px; display: flex; align-items: center; justify-content: center; }
-  .gauge .val b { font-size: 14px; font-weight: 500; }
+  .gauge .val { position: absolute; top: 0; height: 72px; display: flex; align-items: center; justify-content: center; }
+  .gauge .val b { font-size: 16px; font-weight: 500; }
+  /* Narrow card: smaller rings, so three still fit on one line. */
+  @container (max-width: 300px) {
+    .gauges { grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); }
+    .ring { width: 58px; height: 58px; }
+    .gauge .val { height: 58px; }
+    .gauge .val b { font-size: 14px; }
+  }
   .gauge .lbl { font-size: 12px; color: var(--secondary-text-color); margin-top: 0; text-align: center; white-space: nowrap;
                 overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .fans { margin-top: 8px; gap: 6px; }

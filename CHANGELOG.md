@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.1.0-unifi.7 - 2026-11-13
+
+### Changes
+- Larger gauge rings (72 px instead of 52 px, 58 px on cards up to 300 px wide, where three still fit on one line).
+- The speed test's ping pill no longer breaks over lines on a narrow card: it moves under the title instead.
+
 ## 3.1.0-unifi.6 - 2026-11-11
 
 ### Features
