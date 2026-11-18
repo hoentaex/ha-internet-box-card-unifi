@@ -86,17 +86,14 @@ for (const s of shots) {
     ({ type, dark, data }) => {
       const el = document.createElement(type);
       el.setConfig({ type: `custom:${type}` });
-      // Recorder statistics: a plausible 24 h curve per sensor, 5-minute rows from the requested start.
-      const callWS = async (msg) =>
-        Object.fromEntries(
-          (msg.statistic_ids || []).map((id, k) => [
-            id,
-            Array.from({ length: 288 }, (_, i) => ({
-              start: Date.parse(msg.start_time) + i * 300000,
-              mean: 20 + 80 * Math.exp(-((i - 230 + k * 20) ** 2) / 900) + 35 * Math.exp(-((i - 110) ** 2) / 400) + 8 * Math.sin(i * 0.12 + k) ** 2,
-            })),
-          ])
-        );
+      // Recorder statistics: 24 h of 5-minute rows per sensor, a calm night and a busy evening.
+      const row = (t0, k) => (_, i) => {
+        const evening = Math.exp(-((i - 220 - 15 * k) ** 2) / 1000);
+        const noon = Math.exp(-((i - 140) ** 2) / 500);
+        return { start: t0 + i * 300000, mean: 15 + 70 * evening + 30 * noon + 6 * Math.cos(i * 0.1 + k) ** 2 };
+      };
+      const callWS = async ({ statistic_ids: ids = [], start_time: from }) =>
+        Object.fromEntries(ids.map((id, k) => [id, Array.from({ length: 288 }, row(Date.parse(from), k))]));
       el.hass = { ...data, language: "en", locale: { language: "en" }, config: { time_zone: "UTC" }, callWS, themes: { darkMode: dark } };
       document.getElementById("root").appendChild(el);
     },
