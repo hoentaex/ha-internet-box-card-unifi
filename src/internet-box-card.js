@@ -581,6 +581,112 @@ const modelPic = (m, accent) => {
   if (!_tinted.has(key)) _tinted.set(key, svgUri(GENERIC[pic]({ accent })));
   return _tinted.get(key);
 };
+
+// ---------------------------------------------------------------------------
+// Illustrated header: an internet scene at the right of the banner, in a 200 × 80 picture drawn from its bottom
+// right corner (fibre arriving into the box, world dots, Wi-Fi waves to the connected devices). The left of the
+// picture (x < 80) is open sky, under the title. The box is the model's own drawing, drawn big on the ground strip.
+// ---------------------------------------------------------------------------
+
+// Drawn part of each model picture (x, y, width, height in its viewBox), so the box fills its place in the scene
+// whatever the margins of its drawing. The generic form factors keep their geometry when tinted.
+const PIC_FIT = {
+  ultra: [10, 6, 280, 130],
+  pop: [10, 10, 280, 122],
+  delta: [6, 8, 288, 146],
+  revolution: [10, 26, 290, 107],
+  mini_4k: [6, 12, 266, 106],
+  livebox_4: [24, 86, 252, 76],
+  livebox_5: [0, 74, 300, 96],
+  livebox_6: [103, 56, 94, 125],
+  livebox_7: [99, 44, 102, 137],
+  livebox_s: [82, 26, 136, 164],
+  sfr_box_8: [86, 50, 128, 126],
+  sfr_box_7: [104, 22, 92, 158],
+  sfr_nb6vac: [24, 80, 244, 86],
+  bbox_miami: [30, 78, 234, 92],
+  bbox_ultym: [98, 22, 104, 158],
+  bbox_fibre: [107, 24, 86, 158],
+  unifi_rack: [24, 64, 252, 40],
+  unifi_compact: [84, 52, 132, 70],
+  unifi_cylinder: [108, 18, 84, 118],
+  generic_router: [58, 26, 184, 132],
+  generic_hub: [75, 82, 150, 62],
+  generic_tower: [106, 18, 88, 153],
+  generic_mobile: [92, 30, 116, 136],
+  generic_dish: [84, 6, 131, 164],
+};
+
+// Dots of the world map behind the scene, on a fixed pseudo-random pattern.
+const SCENE_DOTS = (() => {
+  const dots = [];
+  for (let y = 6; y < 60; y += 6) for (let x = 86; x < 200; x += 6) if ((x * 7 + y * 13) % 11 < 6) dots.push(`<circle cx="${x}" cy="${y}" r=".9"/>`);
+  return dots.join("");
+})();
+
+// Connected devices around the box (laptop, phone, TV): position and outline.
+const SCENE_DEVICES = [
+  [110, 22, "M-5 -3 h10 v6 h-10z M-7 3 h14"],
+  [132, 12, "M-3 -5 h6 v10 h-6z"],
+  [184, 16, "M-6 -4 h12 v7 h-12z M-2 5 h4"],
+];
+
+// Size of a model picture's viewBox (every drawing starts at 0 0), read once per picture.
+const _picSize = new Map();
+const picSize = (pic) => {
+  if (!_picSize.has(pic)) {
+    const m = decodeURIComponent(pic).match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+    _picSize.set(pic, m ? [Number(m[1]), Number(m[2])] : [300, 160]);
+  }
+  return _picSize.get(pic);
+};
+
+// Colour of the link by scene state: online, syncing, offline, unavailable.
+const SCENE_LINK = { ok: "#2fd0ff", wait: "#ffa600", down: "#e5484d", off: "#9aa3ae" };
+
+/** The banner picture. `state`: ok | wait | down | off (the internet link); `wifi`: the Wi-Fi is on; `pic` / `fit`:
+ *  the box picture (data: URI) and its drawn part; `href`: the box admin page opened by a click on the box. */
+const sceneSvg = ({ state, wifi, pic, fit, href, label }) => {
+  const c = SCENE_LINK[state] || SCENE_LINK.ok;
+  const up = state === "ok" || state === "wait";
+  const radio = up && wifi;
+  const slow = state === "wait";
+  const fibre = "M80 70 H150";
+  const links = SCENE_DEVICES.map(([x, y, d], i) => {
+    const p = `M160 52 Q${(160 + x) / 2} ${y + 10} ${x} ${y + 6}`;
+    return `<path class="sc-wire${radio ? " on" : ""}" d="${p}"/>${
+      radio ? `<circle class="sc-pk" r="1.4" style="offset-path:path('${p}');animation-duration:${(slow ? 2.6 : 1.4) + i * 0.4}s"/>` : ""
+    }<g transform="translate(${x} ${y})"><circle class="sc-dev" r="8"/><path class="sc-dev-i" d="${d}"/></g>`;
+  }).join("");
+  let box = "";
+  if (pic && fit) {
+    const [fx, fy, fw, fh] = fit;
+    const [vw, vh] = picSize(pic);
+    // Wide boxes lie low (28 high at most), standing ones rise to 44; at most 66 wide, centred at x 160, on the ground.
+    const maxH = fw / fh > 1.4 ? 28 : 44;
+    let h = maxH;
+    let w = (h * fw) / fh;
+    if (w > 66) {
+      w = 66;
+      h = (w * fh) / fw;
+    }
+    const img = `<svg x="${(160 - w / 2).toFixed(1)}" y="${(80 - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" viewBox="${fx} ${fy} ${fw} ${fh}" preserveAspectRatio="xMidYMax meet" overflow="visible"><image href="${pic}" width="${vw}" height="${vh}"/></svg>`;
+    box = href
+      ? `<a class="sc-box" href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(label)}"><title>${esc(label)}</title>${img}</a>`
+      : `<g class="sc-box">${img}</g>`;
+  }
+  return `<svg class="scene sc-${state}" viewBox="0 0 200 80" preserveAspectRatio="xMaxYMax meet" focusable="false" style="--sc-link:${c}">
+    <g aria-hidden="true">
+      <g class="sc-dots">${SCENE_DOTS}</g>
+      <path class="sc-fibre-bed" d="${fibre}"/>
+      <path class="sc-fibre${up ? " flow" : ""}" d="${fibre}"/>
+      ${links}
+      <g class="sc-waves${radio ? " on" : ""}" transform="translate(160 40)"><path class="w1" d="M-6 -4 a8 8 0 0 1 12 0"/><path class="w2" d="M-11 -9 a15 15 0 0 1 22 0"/><path class="w3" d="M-16 -14 a22 22 0 0 1 32 0"/></g>
+      ${state === "down" ? '<g class="sc-cut" transform="translate(116 70)"><circle r="6"/><path d="M-2.6 -2.6 l5.2 5.2 M2.6 -2.6 l-5.2 5.2"/></g>' : ""}
+    </g>
+    ${box}
+  </svg>`;
+};
 const IMG_LOGO = "__IMG_LOGO__";
 const IMG_ORANGE = "__IMG_ORANGE__";
 const IMG_SFR = "__IMG_SFR__";
@@ -606,6 +712,7 @@ const ICONS = {
   wifi: "M12,21L15.6,16.2C14.6,15.45 13.35,15 12,15C10.65,15 9.4,15.45 8.4,16.2L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,9C5.5,7.12 8.62,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.8C8.1,12.67 9.97,12 12,12C14.03,12 15.9,12.67 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z",
   wifi_off: "M2.28,3L1,4.27L2.47,5.74C2.04,6 1.61,6.29 1.2,6.6L3,9C3.39,8.7 3.82,8.42 4.26,8.16L6.5,10.4C5.9,10.68 5.33,11 4.8,11.4L6.6,13.8C7.14,13.4 7.73,13.06 8.35,12.79L10.88,15.32C10,15.5 9.13,15.79 8.4,16.2L12,21L14.88,17.17L19.73,22L21,20.72L3.28,3H2.28M12,3C10.08,3 8.24,3.3 6.5,3.85L8.97,6.32C9.95,6.11 10.96,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C11.62,9 11.25,9 10.88,9.05L14.15,12.32C15.32,12.6 16.43,13.09 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z",
   check: "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.58L21,7Z",
+  refresh: "M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z",
   restart: "M12,4C14.1,4 16.1,4.8 17.6,6.3C20.7,9.4 20.7,14.5 17.6,17.6C15.8,19.5 13.3,20.2 10.9,19.9L11.4,17.9C13.1,18.1 14.9,17.5 16.2,16.2C18.5,13.9 18.5,10.1 16.2,7.7C15.1,6.6 13.5,6 12,6V10.6L7,5.6L12,0.6V4M6.3,17.6C3.7,15 3.3,11 5.1,7.9L6.6,9.4C5.5,11.6 5.9,14.4 7.8,16.2C8.3,16.7 8.9,17.1 9.6,17.4L9,19.4C8,19 7.1,18.4 6.3,17.6Z",
   phone: "M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z",
   phone_missed: "M23.71,16.67C20.66,13.77 16.54,12 12,12C7.46,12 3.34,13.77 0.29,16.67C0.11,16.85 0,17.1 0,17.38C0,17.66 0.11,17.9 0.29,18.08L2.77,20.56C2.95,20.74 3.2,20.85 3.5,20.85C3.75,20.85 4,20.75 4.18,20.57C4.97,19.83 5.86,19.21 6.84,18.71C7.17,18.55 7.4,18.21 7.4,17.81V14.71C8.85,14.24 10.39,14 12,14C13.6,14 15.15,14.24 16.6,14.72V17.82C16.6,18.22 16.83,18.56 17.16,18.72C18.14,19.21 19.04,19.84 19.82,20.58C20,20.76 20.25,20.86 20.5,20.86C20.8,20.86 21.05,20.75 21.23,20.57L23.71,18.09C23.89,17.91 24,17.66 24,17.38C24,17.1 23.89,16.85 23.71,16.67M6.5,5.5L12,11L19,4L18,3L12,9L7.5,4.5H11V3H5V9H6.5V5.5Z",
@@ -671,9 +778,16 @@ const STRINGS = {
     model: "Box model (picture and default title)",
     model_auto: "Automatic",
     show_image: "Show the box picture",
+    show_title: "Show title",
+    show_subtitle: "Show subtitle",
     admin: "Open the box admin interface",
     admin_url: "Box admin address (optional, opened when clicking the picture)",
     show_logo: "Show the operator logo",
+    illustration: "Illustrated header (internet scene)",
+    illustration_theme: "Illustration theme",
+    theme_auto: "Automatic (follows the theme)",
+    theme_day: "Day",
+    theme_night: "Night",
     show_network: "Show network",
     show_history: "Show 24 h rate history",
     show_system: "Show system (temperatures, fans)",
@@ -683,6 +797,15 @@ const STRINGS = {
     section_order: "Order of the sections",
     section_order_helper: "Drag the sections into the order you want; the switches above show or hide them",
     speedtest: "Speed test",
+    entities: "Sensors of your choice",
+    ent_rate_down: "Box download rate",
+    ent_rate_up: "Box upload rate",
+    ent_download: "Speed test: download",
+    ent_upload: "Speed test: upload",
+    ent_ping: "Speed test: ping",
+    ent_run: "Speed test: button to run it",
+    run_speedtest: "Run a speed test",
+    speedtest_running: "Speed test running…",
     zoom: "Detail button",
     zoom_helper: "Button at the top right that shows the full card in place of the mini card, and back",
     rate_unit: "Rate unit",
@@ -749,9 +872,16 @@ const STRINGS = {
     model: "Modèle de la box (illustration et titre par défaut)",
     model_auto: "Automatique",
     show_image: "Afficher l'illustration de la box",
+    show_title: "Afficher le titre",
+    show_subtitle: "Afficher le sous-titre",
     admin: "Ouvrir l'interface d'administration de la box",
     admin_url: "Adresse d'administration de la box (facultatif, ouverte au clic sur l'illustration)",
     show_logo: "Afficher le logo de l'opérateur",
+    illustration: "En-tête illustré (scène internet)",
+    illustration_theme: "Thème de l'illustration",
+    theme_auto: "Automatique (suit le thème)",
+    theme_day: "Jour",
+    theme_night: "Nuit",
     show_network: "Afficher le réseau",
     show_history: "Afficher l’historique 24 h des débits",
     show_system: "Afficher le système (températures, ventilateurs)",
@@ -761,6 +891,15 @@ const STRINGS = {
     section_order: "Ordre des sections",
     section_order_helper: "Faites glisser les sections dans l'ordre voulu ; les interrupteurs ci-dessus les affichent ou les masquent",
     speedtest: "Test de débit",
+    entities: "Capteurs de votre choix",
+    ent_rate_down: "Débit descendant de la box",
+    ent_rate_up: "Débit montant de la box",
+    ent_download: "Test de débit : descendant",
+    ent_upload: "Test de débit : montant",
+    ent_ping: "Test de débit : ping",
+    ent_run: "Test de débit : bouton pour le lancer",
+    run_speedtest: "Lancer un test de débit",
+    speedtest_running: "Test de débit en cours…",
     zoom: "Bouton détail",
     zoom_helper: "Bouton en haut à droite qui affiche la carte complète à la place de la mini carte, et inversement",
     rate_unit: "Unité des débits",
@@ -826,9 +965,16 @@ const STRINGS = {
     model: "Boxmodell (Bild und Standardtitel)",
     model_auto: "Automatisch",
     show_image: "Bild der Box anzeigen",
+    show_title: "Titel anzeigen",
+    show_subtitle: "Untertitel anzeigen",
     admin: "Verwaltungsoberfläche der Box öffnen",
     admin_url: "Verwaltungsadresse der Box (optional, wird beim Klick auf das Bild geöffnet)",
     show_logo: "Logo des Anbieters anzeigen",
+    illustration: "Illustrierte Kopfzeile (Internet-Szene)",
+    illustration_theme: "Thema der Illustration",
+    theme_auto: "Automatisch (folgt dem Design)",
+    theme_day: "Tag",
+    theme_night: "Nacht",
     show_network: "Netzwerk anzeigen",
     show_history: "24-h-Verlauf der Raten anzeigen",
     show_system: "System anzeigen (Temperaturen, Lüfter)",
@@ -838,6 +984,15 @@ const STRINGS = {
     section_order: "Reihenfolge der Bereiche",
     section_order_helper: "Bereiche in die gewünschte Reihenfolge ziehen; die Schalter oben blenden sie ein oder aus",
     speedtest: "Geschwindigkeitstest",
+    entities: "Sensoren Ihrer Wahl",
+    ent_rate_down: "Download-Rate der Box",
+    ent_rate_up: "Upload-Rate der Box",
+    ent_download: "Geschwindigkeitstest: Download",
+    ent_upload: "Geschwindigkeitstest: Upload",
+    ent_ping: "Geschwindigkeitstest: Ping",
+    ent_run: "Geschwindigkeitstest: Taste zum Starten",
+    run_speedtest: "Geschwindigkeitstest starten",
+    speedtest_running: "Geschwindigkeitstest läuft…",
     zoom: "Detail-Schaltfläche",
     zoom_helper: "Schaltfläche oben rechts, die anstelle der Mini-Karte die vollständige Karte anzeigt und umgekehrt",
     rate_unit: "Einheit der Datenrate",
@@ -904,9 +1059,16 @@ const STRINGS = {
     model: "Modelo del router (imagen y título por defecto)",
     model_auto: "Automático",
     show_image: "Mostrar la imagen del router",
+    show_title: "Mostrar el título",
+    show_subtitle: "Mostrar el subtítulo",
     admin: "Abrir la interfaz de administración del router",
     admin_url: "Dirección de administración del router (opcional, se abre al hacer clic en la imagen)",
     show_logo: "Mostrar el logotipo del operador",
+    illustration: "Encabezado ilustrado (escena de internet)",
+    illustration_theme: "Tema de la ilustración",
+    theme_auto: "Automático (sigue el tema)",
+    theme_day: "Día",
+    theme_night: "Noche",
     show_network: "Mostrar la red",
     show_history: "Mostrar el historial de 24 h de las velocidades",
     show_system: "Mostrar el sistema (temperaturas, ventiladores)",
@@ -916,6 +1078,15 @@ const STRINGS = {
     section_order: "Orden de las secciones",
     section_order_helper: "Arrastra las secciones al orden deseado; los interruptores de arriba las muestran u ocultan",
     speedtest: "Test de velocidad",
+    entities: "Sensores a su elección",
+    ent_rate_down: "Velocidad de descarga del router",
+    ent_rate_up: "Velocidad de subida del router",
+    ent_download: "Test de velocidad: descarga",
+    ent_upload: "Test de velocidad: subida",
+    ent_ping: "Test de velocidad: ping",
+    ent_run: "Test de velocidad: botón para lanzarlo",
+    run_speedtest: "Lanzar un test de velocidad",
+    speedtest_running: "Test de velocidad en curso…",
     zoom: "Botón de detalle",
     zoom_helper: "Botón arriba a la derecha que muestra la tarjeta completa en lugar de la minitarjeta, y viceversa",
     rate_unit: "Unidad de velocidad",
@@ -983,9 +1154,16 @@ const STRINGS = {
     model: "Модел рутера (слика и подразумевани наслов)",
     model_auto: "Аутоматски",
     show_image: "Прикажи слику рутера",
+    show_title: "Прикажи наслов",
+    show_subtitle: "Прикажи поднаслов",
     admin: "Отвори администраторски интерфејс рутера",
     admin_url: "Администраторска адреса рутера (опционо, отвара се кликом на слику)",
     show_logo: "Прикажи лого оператера",
+    illustration: "Илустровано заглавље (интернет сцена)",
+    illustration_theme: "Тема илустрације",
+    theme_auto: "Аутоматски (прати тему)",
+    theme_day: "Дан",
+    theme_night: "Ноћ",
     show_network: "Прикажи мрежу",
     show_history: "Прикажи историју протока за 24 ч",
     show_system: "Прикажи систем (температуре, вентилатори)",
@@ -995,6 +1173,15 @@ const STRINGS = {
     section_order: "Редослед одељака",
     section_order_helper: "Превуците одељке у жељени редослед; прекидачи изнад их приказују или скривају",
     speedtest: "Тест брзине",
+    entities: "Сензори по вашем избору",
+    ent_rate_down: "Брзина преузимања рутера",
+    ent_rate_up: "Брзина слања рутера",
+    ent_download: "Тест брзине: преузимање",
+    ent_upload: "Тест брзине: слање",
+    ent_ping: "Тест брзине: пинг",
+    ent_run: "Тест брзине: дугме за покретање",
+    run_speedtest: "Покрени тест брзине",
+    speedtest_running: "Тест брзине у току…",
     zoom: "Дугме за детаље",
     zoom_helper: "Дугме у горњем десном углу које пребацује мини картицу на пун приказ и назад",
     rate_unit: "Јединица брзине преноса",
@@ -1062,9 +1249,16 @@ const STRINGS = {
     model: "Model rutera (slika i podrazumevani naslov)",
     model_auto: "Automatski",
     show_image: "Prikaži sliku rutera",
+    show_title: "Prikaži naslov",
+    show_subtitle: "Prikaži podnaslov",
     admin: "Otvori administratorski interfejs rutera",
     admin_url: "Administratorska adresa rutera (opciono, otvara se klikom na sliku)",
     show_logo: "Prikaži logo operatera",
+    illustration: "Ilustrovano zaglavlje (internet scena)",
+    illustration_theme: "Tema ilustracije",
+    theme_auto: "Automatski (prati temu)",
+    theme_day: "Dan",
+    theme_night: "Noć",
     show_network: "Prikaži mrežu",
     show_history: "Prikaži istoriju protoka za 24 č",
     show_system: "Prikaži sistem (temperature, ventilatori)",
@@ -1074,6 +1268,15 @@ const STRINGS = {
     section_order: "Redosled odeljaka",
     section_order_helper: "Prevucite odeljke u željeni redosled; prekidači iznad ih prikazuju ili skrivaju",
     speedtest: "Test brzine",
+    entities: "Senzori po vašem izboru",
+    ent_rate_down: "Brzina preuzimanja rutera",
+    ent_rate_up: "Brzina slanja rutera",
+    ent_download: "Test brzine: preuzimanje",
+    ent_upload: "Test brzine: slanje",
+    ent_ping: "Test brzine: ping",
+    ent_run: "Test brzine: dugme za pokretanje",
+    run_speedtest: "Pokreni test brzine",
+    speedtest_running: "Test brzine u toku…",
     zoom: "Dugme za detalje",
     zoom_helper: "Dugme u gornjem desnom uglu koje prebacuje mini karticu na pun prikaz i nazad",
     rate_unit: "Jedinica brzine prenosa",
@@ -1140,9 +1343,16 @@ const STRINGS = {
     model: "Modello del modem (immagine e titolo predefinito)",
     model_auto: "Automatico",
     show_image: "Mostra l'immagine del modem",
+    show_title: "Mostra il titolo",
+    show_subtitle: "Mostra il sottotitolo",
     admin: "Apri l'interfaccia di amministrazione del modem",
     admin_url: "Indirizzo di amministrazione del modem (facoltativo, aperto al clic sull'immagine)",
     show_logo: "Mostra il logo dell'operatore",
+    illustration: "Intestazione illustrata (scena internet)",
+    illustration_theme: "Tema dell'illustrazione",
+    theme_auto: "Automatico (segue il tema)",
+    theme_day: "Giorno",
+    theme_night: "Notte",
     show_network: "Mostra la rete",
     show_history: "Mostra lo storico 24 h delle velocità",
     show_system: "Mostra il sistema (temperature, ventole)",
@@ -1152,6 +1362,15 @@ const STRINGS = {
     section_order: "Ordine delle sezioni",
     section_order_helper: "Trascina le sezioni nell'ordine desiderato; gli interruttori sopra le mostrano o nascondono",
     speedtest: "Test di velocità",
+    entities: "Sensori a scelta",
+    ent_rate_down: "Velocità di download del router",
+    ent_rate_up: "Velocità di upload del router",
+    ent_download: "Test di velocità: download",
+    ent_upload: "Test di velocità: upload",
+    ent_ping: "Test di velocità: ping",
+    ent_run: "Test di velocità: pulsante per avviarlo",
+    run_speedtest: "Avvia un test di velocità",
+    speedtest_running: "Test di velocità in corso…",
     zoom: "Pulsante dettagli",
     zoom_helper: "Pulsante in alto a destra che mostra la scheda completa al posto della mini scheda, e viceversa",
     rate_unit: "Unità di velocità",
@@ -1217,9 +1436,16 @@ const STRINGS = {
     model: "Model van de modem (afbeelding en standaardtitel)",
     model_auto: "Automatisch",
     show_image: "Afbeelding van de modem tonen",
+    show_title: "Titel tonen",
+    show_subtitle: "Ondertitel tonen",
     admin: "Beheerinterface van de modem openen",
     admin_url: "Beheeradres van de modem (optioneel, geopend bij klikken op de afbeelding)",
     show_logo: "Logo van de provider tonen",
+    illustration: "Geïllustreerde koptekst (internetscène)",
+    illustration_theme: "Thema van de illustratie",
+    theme_auto: "Automatisch (volgt het thema)",
+    theme_day: "Dag",
+    theme_night: "Nacht",
     show_network: "Netwerk tonen",
     show_history: "24-uursgeschiedenis van de snelheden weergeven",
     show_system: "Systeem tonen (temperaturen, ventilatoren)",
@@ -1229,6 +1455,15 @@ const STRINGS = {
     section_order: "Volgorde van de secties",
     section_order_helper: "Sleep de secties in de gewenste volgorde; de schakelaars hierboven tonen of verbergen ze",
     speedtest: "Snelheidstest",
+    entities: "Sensoren naar keuze",
+    ent_rate_down: "Downloadsnelheid van de router",
+    ent_rate_up: "Uploadsnelheid van de router",
+    ent_download: "Snelheidstest: download",
+    ent_upload: "Snelheidstest: upload",
+    ent_ping: "Snelheidstest: ping",
+    ent_run: "Snelheidstest: knop om hem te starten",
+    run_speedtest: "Snelheidstest starten",
+    speedtest_running: "Snelheidstest bezig…",
     zoom: "Detailknop",
     zoom_helper: "Knop rechtsboven die de volledige kaart toont in plaats van de minikaart, en terug",
     rate_unit: "Eenheid van snelheid",
@@ -1295,9 +1530,16 @@ const STRINGS = {
     model: "Modelo do router (imagem e título predefinido)",
     model_auto: "Automático",
     show_image: "Mostrar a imagem do router",
+    show_title: "Mostrar o título",
+    show_subtitle: "Mostrar o subtítulo",
     admin: "Abrir a interface de administração do router",
     admin_url: "Endereço de administração do router (opcional, aberto ao clicar na imagem)",
     show_logo: "Mostrar o logótipo do operador",
+    illustration: "Cabeçalho ilustrado (cena de internet)",
+    illustration_theme: "Tema da ilustração",
+    theme_auto: "Automático (segue o tema)",
+    theme_day: "Dia",
+    theme_night: "Noite",
     show_network: "Mostrar a rede",
     show_history: "Mostrar o histórico de 24 h dos débitos",
     show_system: "Mostrar o sistema (temperaturas, ventoinhas)",
@@ -1307,6 +1549,15 @@ const STRINGS = {
     section_order: "Ordem das secções",
     section_order_helper: "Arraste as secções para a ordem pretendida; os interruptores acima mostram-nas ou ocultam-nas",
     speedtest: "Teste de velocidade",
+    entities: "Sensores à sua escolha",
+    ent_rate_down: "Velocidade de download do router",
+    ent_rate_up: "Velocidade de upload do router",
+    ent_download: "Teste de velocidade: download",
+    ent_upload: "Teste de velocidade: upload",
+    ent_ping: "Teste de velocidade: ping",
+    ent_run: "Teste de velocidade: botão para o iniciar",
+    run_speedtest: "Iniciar um teste de velocidade",
+    speedtest_running: "Teste de velocidade em curso…",
     zoom: "Botão de detalhe",
     zoom_helper: "Botão no canto superior direito que mostra o cartão completo em vez do minicartão, e vice-versa",
     rate_unit: "Unidade de velocidade",
@@ -1375,9 +1626,16 @@ const STRINGS = {
     model: "Model routera (obraz i domyślny tytuł)",
     model_auto: "Automatycznie",
     show_image: "Pokaż obraz routera",
+    show_title: "Pokaż tytuł",
+    show_subtitle: "Pokaż podtytuł",
     admin: "Otwórz interfejs administracyjny routera",
     admin_url: "Adres panelu administracyjnego routera (opcjonalny, otwierany po kliknięciu obrazu)",
     show_logo: "Pokaż logo operatora",
+    illustration: "Ilustrowany nagłówek (scena internetu)",
+    illustration_theme: "Motyw ilustracji",
+    theme_auto: "Automatycznie (według motywu)",
+    theme_day: "Dzień",
+    theme_night: "Noc",
     show_network: "Pokaż sieć",
     show_history: "Pokaż historię przepustowości z 24 h",
     show_system: "Pokaż system (temperatury, wentylatory)",
@@ -1387,6 +1645,15 @@ const STRINGS = {
     section_order: "Kolejność sekcji",
     section_order_helper: "Przeciągnij sekcje w wybranej kolejności; przełączniki powyżej je pokazują lub ukrywają",
     speedtest: "Test prędkości",
+    entities: "Wybrane czujniki",
+    ent_rate_down: "Prędkość pobierania routera",
+    ent_rate_up: "Prędkość wysyłania routera",
+    ent_download: "Test prędkości: pobieranie",
+    ent_upload: "Test prędkości: wysyłanie",
+    ent_ping: "Test prędkości: ping",
+    ent_run: "Test prędkości: przycisk do uruchomienia",
+    run_speedtest: "Uruchom test prędkości",
+    speedtest_running: "Trwa test prędkości…",
     zoom: "Przycisk szczegółów",
     zoom_helper: "Przycisk w prawym górnym rogu, który pokazuje pełną kartę zamiast minikarty, i z powrotem",
     rate_unit: "Jednostka prędkości",
@@ -1453,9 +1720,16 @@ const STRINGS = {
     model: "Modelul routerului (imagine și titlu implicit)",
     model_auto: "Automat",
     show_image: "Afișează imaginea routerului",
+    show_title: "Afișează titlul",
+    show_subtitle: "Afișează subtitlul",
     admin: "Deschide interfața de administrare a routerului",
     admin_url: "Adresa de administrare a routerului (opțional, se deschide la clic pe imagine)",
     show_logo: "Afișează sigla operatorului",
+    illustration: "Antet ilustrat (scenă internet)",
+    illustration_theme: "Tema ilustrației",
+    theme_auto: "Automat (urmează tema)",
+    theme_day: "Zi",
+    theme_night: "Noapte",
     show_network: "Afișează rețeaua",
     show_history: "Afișează istoricul vitezelor pe 24 h",
     show_system: "Afișează sistemul (temperaturi, ventilatoare)",
@@ -1465,6 +1739,15 @@ const STRINGS = {
     section_order: "Ordinea secțiunilor",
     section_order_helper: "Trageți secțiunile în ordinea dorită; comutatoarele de mai sus le afișează sau le ascund",
     speedtest: "Test de viteză",
+    entities: "Senzori la alegere",
+    ent_rate_down: "Viteza de descărcare a routerului",
+    ent_rate_up: "Viteza de încărcare a routerului",
+    ent_download: "Test de viteză: descărcare",
+    ent_upload: "Test de viteză: încărcare",
+    ent_ping: "Test de viteză: ping",
+    ent_run: "Test de viteză: buton pentru pornire",
+    run_speedtest: "Pornește un test de viteză",
+    speedtest_running: "Test de viteză în curs…",
     zoom: "Buton de detalii",
     zoom_helper: "Buton din dreapta sus care afișează cardul complet în locul minicardului, și invers",
     rate_unit: "Unitatea vitezei de transfer",
@@ -1531,9 +1814,16 @@ const STRINGS = {
     model: "Routermodel (billede og standardtitel)",
     model_auto: "Automatisk",
     show_image: "Vis billede af routeren",
+    show_title: "Vis titel",
+    show_subtitle: "Vis undertitel",
     admin: "Åbn routerens administrationsside",
     admin_url: "Routerens administrationsadresse (valgfri, åbnes ved klik på billedet)",
     show_logo: "Vis operatørens logo",
+    illustration: "Illustreret overskrift (internetscene)",
+    illustration_theme: "Illustrationens tema",
+    theme_auto: "Automatisk (følger temaet)",
+    theme_day: "Dag",
+    theme_night: "Nat",
     show_network: "Vis netværk",
     show_history: "Vis 24-timers historik for hastigheder",
     show_system: "Vis system (temperaturer, blæsere)",
@@ -1543,6 +1833,15 @@ const STRINGS = {
     section_order: "Rækkefølge af sektionerne",
     section_order_helper: "Træk sektionerne i den ønskede rækkefølge; kontakterne ovenfor viser eller skjuler dem",
     speedtest: "Hastighedstest",
+    entities: "Sensorer efter eget valg",
+    ent_rate_down: "Routerens downloadhastighed",
+    ent_rate_up: "Routerens uploadhastighed",
+    ent_download: "Hastighedstest: download",
+    ent_upload: "Hastighedstest: upload",
+    ent_ping: "Hastighedstest: ping",
+    ent_run: "Hastighedstest: knap til at starte den",
+    run_speedtest: "Start en hastighedstest",
+    speedtest_running: "Hastighedstest kører…",
     zoom: "Detaljeknap",
     zoom_helper: "Knap øverst til højre, der viser hele kortet i stedet for minikortet og tilbage igen",
     rate_unit: "Enhed for hastighed",
@@ -1609,9 +1908,16 @@ const STRINGS = {
     model: "Routermodell (bild och standardtitel)",
     model_auto: "Automatisk",
     show_image: "Visa bild på routern",
+    show_title: "Visa rubrik",
+    show_subtitle: "Visa underrubrik",
     admin: "Öppna routerns administrationsgränssnitt",
     admin_url: "Routerns administrationsadress (valfri, öppnas vid klick på bilden)",
     show_logo: "Visa operatörens logotyp",
+    illustration: "Illustrerad rubrik (internetscen)",
+    illustration_theme: "Illustrationens tema",
+    theme_auto: "Automatiskt (följer temat)",
+    theme_day: "Dag",
+    theme_night: "Natt",
     show_network: "Visa nätverk",
     show_history: "Visa 24 h-historik för hastigheter",
     show_system: "Visa system (temperaturer, fläktar)",
@@ -1621,6 +1927,15 @@ const STRINGS = {
     section_order: "Sektionernas ordning",
     section_order_helper: "Dra sektionerna i önskad ordning; reglagen ovan visar eller döljer dem",
     speedtest: "Hastighetstest",
+    entities: "Valfria sensorer",
+    ent_rate_down: "Routerns nedladdningshastighet",
+    ent_rate_up: "Routerns uppladdningshastighet",
+    ent_download: "Hastighetstest: nedladdning",
+    ent_upload: "Hastighetstest: uppladdning",
+    ent_ping: "Hastighetstest: ping",
+    ent_run: "Hastighetstest: knapp för att starta det",
+    run_speedtest: "Starta ett hastighetstest",
+    speedtest_running: "Hastighetstest pågår…",
     zoom: "Detaljknapp",
     zoom_helper: "Knapp uppe till höger som visar hela kortet i stället för minikortet, och tillbaka",
     rate_unit: "Enhet för hastighet",
@@ -1687,9 +2002,16 @@ const STRINGS = {
     model: "Модел на рутера (изображение и заглавие по подразбиране)",
     model_auto: "Автоматично",
     show_image: "Показване на изображение на рутера",
+    show_title: "Показване на заглавието",
+    show_subtitle: "Показване на подзаглавието",
     admin: "Отваряне на администраторския интерфейс на рутера",
     admin_url: "Администраторски адрес на рутера (по избор, отваря се при щракване върху изображението)",
     show_logo: "Показване на логото на оператора",
+    illustration: "Илюстрирана заглавна част (интернет сцена)",
+    illustration_theme: "Тема на илюстрацията",
+    theme_auto: "Автоматично (следва темата)",
+    theme_day: "Ден",
+    theme_night: "Нощ",
     show_network: "Показване на мрежата",
     show_history: "Показване на 24-часовата история на скоростите",
     show_system: "Показване на системата (температури, вентилатори)",
@@ -1699,6 +2021,15 @@ const STRINGS = {
     section_order: "Ред на секциите",
     section_order_helper: "Плъзнете секциите в желания ред; превключвателите по-горе ги показват или скриват",
     speedtest: "Тест на скоростта",
+    entities: "Сензори по ваш избор",
+    ent_rate_down: "Скорост на изтегляне на рутера",
+    ent_rate_up: "Скорост на качване на рутера",
+    ent_download: "Тест на скоростта: изтегляне",
+    ent_upload: "Тест на скоростта: качване",
+    ent_ping: "Тест на скоростта: пинг",
+    ent_run: "Тест на скоростта: бутон за стартиране",
+    run_speedtest: "Стартиране на тест на скоростта",
+    speedtest_running: "Тестът на скоростта тече…",
     zoom: "Бутон за подробности",
     zoom_helper: "Бутон горе вдясно, който показва пълната карта вместо мини картата и обратно",
     rate_unit: "Мерна единица за скорост",
@@ -1765,9 +2096,16 @@ const STRINGS = {
     model: "Модель роутера (изображение и заголовок по умолчанию)",
     model_auto: "Автоматически",
     show_image: "Показывать изображение роутера",
+    show_title: "Показывать заголовок",
+    show_subtitle: "Показывать подзаголовок",
     admin: "Открыть веб-интерфейс роутера",
     admin_url: "Адрес веб-интерфейса роутера (необязательно, открывается по нажатию на изображение)",
     show_logo: "Показывать логотип оператора",
+    illustration: "Иллюстрированный заголовок (интернет-сцена)",
+    illustration_theme: "Тема иллюстрации",
+    theme_auto: "Автоматически (по теме)",
+    theme_day: "День",
+    theme_night: "Ночь",
     show_network: "Показывать сеть",
     show_history: "Показать историю скоростей за 24 ч",
     show_system: "Показывать систему (температуры, вентиляторы)",
@@ -1777,6 +2115,15 @@ const STRINGS = {
     section_order: "Порядок разделов",
     section_order_helper: "Перетащите разделы в нужном порядке; переключатели выше показывают или скрывают их",
     speedtest: "Тест скорости",
+    entities: "Датчики на выбор",
+    ent_rate_down: "Скорость загрузки роутера",
+    ent_rate_up: "Скорость отдачи роутера",
+    ent_download: "Тест скорости: загрузка",
+    ent_upload: "Тест скорости: отдача",
+    ent_ping: "Тест скорости: пинг",
+    ent_run: "Тест скорости: кнопка запуска",
+    run_speedtest: "Запустить тест скорости",
+    speedtest_running: "Идёт тест скорости…",
     zoom: "Кнопка подробностей",
     zoom_helper: "Кнопка в правом верхнем углу, которая показывает полную карточку вместо мини-карточки и обратно",
     rate_unit: "Единица скорости",
@@ -1844,9 +2191,16 @@ const STRINGS = {
     model: "Модель роутера (зображення і типовий заголовок)",
     model_auto: "Автоматично",
     show_image: "Показувати зображення роутера",
+    show_title: "Показувати заголовок",
+    show_subtitle: "Показувати підзаголовок",
     admin: "Відкрити вебінтерфейс роутера",
     admin_url: "Адреса вебінтерфейсу роутера (необов’язково, відкривається натисканням на зображення)",
     show_logo: "Показувати логотип оператора",
+    illustration: "Ілюстрований заголовок (інтернет-сцена)",
+    illustration_theme: "Тема ілюстрації",
+    theme_auto: "Автоматично (за темою)",
+    theme_day: "День",
+    theme_night: "Ніч",
     show_network: "Показувати мережу",
     show_history: "Показати історію швидкостей за 24 год",
     show_system: "Показувати систему (температури, вентилятори)",
@@ -1856,6 +2210,15 @@ const STRINGS = {
     section_order: "Порядок розділів",
     section_order_helper: "Перетягніть розділи в потрібному порядку; перемикачі вище показують або приховують їх",
     speedtest: "Тест швидкості",
+    entities: "Датчики на вибір",
+    ent_rate_down: "Швидкість завантаження роутера",
+    ent_rate_up: "Швидкість віддачі роутера",
+    ent_download: "Тест швидкості: завантаження",
+    ent_upload: "Тест швидкості: віддача",
+    ent_ping: "Тест швидкості: пінг",
+    ent_run: "Тест швидкості: кнопка запуску",
+    run_speedtest: "Запустити тест швидкості",
+    speedtest_running: "Триває тест швидкості…",
     zoom: "Кнопка подробиць",
     zoom_helper: "Кнопка у правому верхньому куті, яка показує повну картку замість мінікартки, і навпаки",
     rate_unit: "Одиниця швидкості",
@@ -1921,9 +2284,16 @@ const STRINGS = {
     model: "Router típusa (kép és alapértelmezett cím)",
     model_auto: "Automatikus",
     show_image: "A router képének megjelenítése",
+    show_title: "Cím megjelenítése",
+    show_subtitle: "Alcím megjelenítése",
     admin: "A router felügyeleti felületének megnyitása",
     admin_url: "A router felügyeleti címe (nem kötelező, a képre kattintva nyílik meg)",
     show_logo: "A szolgáltató logójának megjelenítése",
+    illustration: "Illusztrált fejléc (internetes jelenet)",
+    illustration_theme: "Az illusztráció témája",
+    theme_auto: "Automatikus (a témát követi)",
+    theme_day: "Nappal",
+    theme_night: "Éjszaka",
     show_network: "Hálózat megjelenítése",
     show_history: "Sebességek 24 órás előzményeinek megjelenítése",
     show_system: "Rendszer megjelenítése (hőmérsékletek, ventilátorok)",
@@ -1933,6 +2303,15 @@ const STRINGS = {
     section_order: "A szakaszok sorrendje",
     section_order_helper: "Húzza a szakaszokat a kívánt sorrendbe; a fenti kapcsolók megjelenítik vagy elrejtik őket",
     speedtest: "Sebességteszt",
+    entities: "Választott érzékelők",
+    ent_rate_down: "A router letöltési sebessége",
+    ent_rate_up: "A router feltöltési sebessége",
+    ent_download: "Sebességteszt: letöltés",
+    ent_upload: "Sebességteszt: feltöltés",
+    ent_ping: "Sebességteszt: ping",
+    ent_run: "Sebességteszt: indító gomb",
+    run_speedtest: "Sebességteszt indítása",
+    speedtest_running: "Sebességteszt folyamatban…",
     zoom: "Részletek gomb",
     zoom_helper: "Gomb a jobb felső sarokban, amely a minikártya helyett a teljes kártyát jeleníti meg, és vissza",
     rate_unit: "Sebesség mértékegysége",
@@ -2000,9 +2379,16 @@ const STRINGS = {
     model: "Model routera (obrázok a predvolený názov)",
     model_auto: "Automaticky",
     show_image: "Zobraziť obrázok routera",
+    show_title: "Zobraziť názov",
+    show_subtitle: "Zobraziť podnázov",
     admin: "Otvoriť administračné rozhranie routera",
     admin_url: "Administračná adresa routera (voliteľná, otvorí sa po kliknutí na obrázok)",
     show_logo: "Zobraziť logo operátora",
+    illustration: "Ilustrovaná hlavička (internetová scéna)",
+    illustration_theme: "Téma ilustrácie",
+    theme_auto: "Automaticky (podľa témy)",
+    theme_day: "Deň",
+    theme_night: "Noc",
     show_network: "Zobraziť sieť",
     show_history: "Zobraziť 24 h históriu rýchlostí",
     show_system: "Zobraziť systém (teploty, ventilátory)",
@@ -2012,6 +2398,15 @@ const STRINGS = {
     section_order: "Poradie sekcií",
     section_order_helper: "Presuňte sekcie do požadovaného poradia; prepínače vyššie ich zobrazia alebo skryjú",
     speedtest: "Test rýchlosti",
+    entities: "Senzory podľa vlastného výberu",
+    ent_rate_down: "Rýchlosť sťahovania routera",
+    ent_rate_up: "Rýchlosť odosielania routera",
+    ent_download: "Test rýchlosti: sťahovanie",
+    ent_upload: "Test rýchlosti: odosielanie",
+    ent_ping: "Test rýchlosti: ping",
+    ent_run: "Test rýchlosti: tlačidlo na spustenie",
+    run_speedtest: "Spustiť test rýchlosti",
+    speedtest_running: "Prebieha test rýchlosti…",
     zoom: "Tlačidlo podrobností",
     zoom_helper: "Tlačidlo vpravo hore, ktoré namiesto minikarty zobrazí celú kartu, a naopak",
     rate_unit: "Jednotka rýchlosti",
@@ -2079,9 +2474,16 @@ const STRINGS = {
     model: "Model routeru (obrázek a výchozí název)",
     model_auto: "Automaticky",
     show_image: "Zobrazit obrázek routeru",
+    show_title: "Zobrazit název",
+    show_subtitle: "Zobrazit podnázev",
     admin: "Otevřít administrační rozhraní routeru",
     admin_url: "Administrační adresa routeru (volitelná, otevře se kliknutím na obrázek)",
     show_logo: "Zobrazit logo operátora",
+    illustration: "Ilustrované záhlaví (internetová scéna)",
+    illustration_theme: "Motiv ilustrace",
+    theme_auto: "Automaticky (podle motivu)",
+    theme_day: "Den",
+    theme_night: "Noc",
     show_network: "Zobrazit síť",
     show_history: "Zobrazit 24h historii rychlostí",
     show_system: "Zobrazit systém (teploty, ventilátory)",
@@ -2091,6 +2493,15 @@ const STRINGS = {
     section_order: "Pořadí sekcí",
     section_order_helper: "Přetáhněte sekce do požadovaného pořadí; přepínače výše je zobrazí nebo skryjí",
     speedtest: "Test rychlosti",
+    entities: "Senzory dle vlastního výběru",
+    ent_rate_down: "Rychlost stahování routeru",
+    ent_rate_up: "Rychlost odesílání routeru",
+    ent_download: "Test rychlosti: stahování",
+    ent_upload: "Test rychlosti: odesílání",
+    ent_ping: "Test rychlosti: ping",
+    ent_run: "Test rychlosti: tlačítko pro spuštění",
+    run_speedtest: "Spustit test rychlosti",
+    speedtest_running: "Probíhá test rychlosti…",
     zoom: "Tlačítko podrobností",
     zoom_helper: "Tlačítko vpravo nahoře, které místo minikarty zobrazí celou kartu, a zpět",
     rate_unit: "Jednotka rychlosti",
@@ -2159,9 +2570,16 @@ const STRINGS = {
     model: "Model usmerjevalnika (slika in privzeti naslov)",
     model_auto: "Samodejno",
     show_image: "Prikaži sliko usmerjevalnika",
+    show_title: "Prikaži naslov",
+    show_subtitle: "Prikaži podnaslov",
     admin: "Odpri skrbniški vmesnik usmerjevalnika",
     admin_url: "Skrbniški naslov usmerjevalnika (neobvezno, odpre se ob kliku na sliko)",
     show_logo: "Prikaži logotip operaterja",
+    illustration: "Ilustrirana glava (internetni prizor)",
+    illustration_theme: "Tema ilustracije",
+    theme_auto: "Samodejno (sledi temi)",
+    theme_day: "Dan",
+    theme_night: "Noč",
     show_network: "Prikaži omrežje",
     show_history: "Prikaži 24-urno zgodovino hitrosti",
     show_system: "Prikaži sistem (temperature, ventilatorji)",
@@ -2171,6 +2589,15 @@ const STRINGS = {
     section_order: "Vrstni red razdelkov",
     section_order_helper: "Povlecite razdelke v želeni vrstni red; stikala zgoraj jih prikažejo ali skrijejo",
     speedtest: "Preizkus hitrosti",
+    entities: "Senzorji po vaši izbiri",
+    ent_rate_down: "Hitrost prenosa usmerjevalnika",
+    ent_rate_up: "Hitrost nalaganja usmerjevalnika",
+    ent_download: "Preizkus hitrosti: prenos",
+    ent_upload: "Preizkus hitrosti: nalaganje",
+    ent_ping: "Preizkus hitrosti: ping",
+    ent_run: "Test hitrosti: gumb za zagon",
+    run_speedtest: "Zaženi test hitrosti",
+    speedtest_running: "Test hitrosti poteka…",
     zoom: "Gumb za podrobnosti",
     zoom_helper: "Gumb zgoraj desno, ki namesto mini kartice prikaže celotno kartico, in nazaj",
     rate_unit: "Enota hitrosti",
@@ -2237,9 +2664,16 @@ const STRINGS = {
     model: "Maršrutētāja modelis (attēls un noklusējuma virsraksts)",
     model_auto: "Automātiski",
     show_image: "Rādīt maršrutētāja attēlu",
+    show_title: "Rādīt virsrakstu",
+    show_subtitle: "Rādīt apakšvirsrakstu",
     admin: "Atvērt maršrutētāja administrēšanas saskarni",
     admin_url: "Maršrutētāja administrēšanas adrese (neobligāta, tiek atvērta, noklikšķinot uz attēla)",
     show_logo: "Rādīt operatora logotipu",
+    illustration: "Ilustrēta galvene (interneta aina)",
+    illustration_theme: "Ilustrācijas tēma",
+    theme_auto: "Automātiski (seko tēmai)",
+    theme_day: "Diena",
+    theme_night: "Nakts",
     show_network: "Rādīt tīklu",
     show_history: "Rādīt ātrumu 24 h vēsturi",
     show_system: "Rādīt sistēmu (temperatūras, ventilatori)",
@@ -2249,6 +2683,15 @@ const STRINGS = {
     section_order: "Sadaļu secība",
     section_order_helper: "Velciet sadaļas vēlamajā secībā; slēdži augstāk tās parāda vai paslēpj",
     speedtest: "Ātruma tests",
+    entities: "Jūsu izvēlēti sensori",
+    ent_rate_down: "Maršrutētāja lejupielādes ātrums",
+    ent_rate_up: "Maršrutētāja augšupielādes ātrums",
+    ent_download: "Ātruma tests: lejupielāde",
+    ent_upload: "Ātruma tests: augšupielāde",
+    ent_ping: "Ātruma tests: ping",
+    ent_run: "Ātruma tests: poga tā palaišanai",
+    run_speedtest: "Palaist ātruma testu",
+    speedtest_running: "Notiek ātruma tests…",
     zoom: "Detaļu poga",
     zoom_helper: "Poga augšējā labajā stūrī, kas minikartītes vietā parāda pilno kartīti, un atpakaļ",
     rate_unit: "Ātruma mērvienība",
@@ -2315,9 +2758,16 @@ const STRINGS = {
     model: "Μοντέλο δρομολογητή (εικόνα και προεπιλεγμένος τίτλος)",
     model_auto: "Αυτόματα",
     show_image: "Εμφάνιση εικόνας του δρομολογητή",
+    show_title: "Εμφάνιση τίτλου",
+    show_subtitle: "Εμφάνιση υπότιτλου",
     admin: "Άνοιγμα της διεπαφής διαχείρισης του δρομολογητή",
     admin_url: "Διεύθυνση διαχείρισης του δρομολογητή (προαιρετική, ανοίγει με κλικ στην εικόνα)",
     show_logo: "Εμφάνιση λογότυπου παρόχου",
+    illustration: "Εικονογραφημένη κεφαλίδα (σκηνή διαδικτύου)",
+    illustration_theme: "Θέμα εικονογράφησης",
+    theme_auto: "Αυτόματο (ακολουθεί το θέμα)",
+    theme_day: "Ημέρα",
+    theme_night: "Νύχτα",
     show_network: "Εμφάνιση δικτύου",
     show_history: "Εμφάνιση ιστορικού ταχυτήτων 24 ωρών",
     show_system: "Εμφάνιση συστήματος (θερμοκρασίες, ανεμιστήρες)",
@@ -2327,6 +2777,15 @@ const STRINGS = {
     section_order: "Σειρά των ενοτήτων",
     section_order_helper: "Σύρετε τις ενότητες στη σειρά που θέλετε· οι διακόπτες παραπάνω τις εμφανίζουν ή τις κρύβουν",
     speedtest: "Τεστ ταχύτητας",
+    entities: "Αισθητήρες της επιλογής σας",
+    ent_rate_down: "Ταχύτητα λήψης του router",
+    ent_rate_up: "Ταχύτητα αποστολής του router",
+    ent_download: "Τεστ ταχύτητας: λήψη",
+    ent_upload: "Τεστ ταχύτητας: αποστολή",
+    ent_ping: "Τεστ ταχύτητας: ping",
+    ent_run: "Τεστ ταχύτητας: κουμπί εκκίνησης",
+    run_speedtest: "Εκκίνηση τεστ ταχύτητας",
+    speedtest_running: "Τεστ ταχύτητας σε εξέλιξη…",
     zoom: "Κουμπί λεπτομερειών",
     zoom_helper: "Κουμπί πάνω δεξιά που εμφανίζει την πλήρη κάρτα στη θέση της μίνι κάρτας, και αντίστροφα",
     rate_unit: "Μονάδα ταχύτητας",
@@ -2386,6 +2845,13 @@ const OPERATORS = {
     platform: "freebox", name: "Freebox", color: "#cd1e25", logo: IMG_LOGO,
     website: FREE_URL, admin: ADMIN_URL, models: MODELS,
     keys: { rate_down: "rate_down", rate_up: "rate_up", missed: "missed", wifi: "wifi", mark_read: "mark_calls_as_read", reboot: "reboot", partition: "partition_free_space", raid: "raid_degraded" },
+    // Core versions whose Freebox entities have hardcoded English names and no translation key (juju35/ha-internet-box-card#112):
+    // matched by entity-id suffix, only for entities without a key. Partitions and RAID arrays are on the disk devices.
+    ids: {
+      rate_down: /^sensor\..+_download_speed$/, rate_up: /^sensor\..+_upload_speed$/, missed: /^sensor\..+_missed_calls$/,
+      wifi: /^switch\..+_wifi$/, mark_read: /^button\.(.+_)?mark_calls_as_read$/,
+    },
+    childIds: { partition: /^sensor\..+_free_space$/, raid: /^binary_sensor\..+_degraded$/ },
   },
   livebox: {
     platform: "livebox", name: "Livebox", color: "#ff7900", logo: IMG_ORANGE,
@@ -2393,8 +2859,9 @@ const OPERATORS = {
     models: [
       { id: "livebox_7", name: "Livebox 7", re: /livebox\s*7|lb7/i },
       { id: "livebox_6", name: "Livebox 6", re: /livebox\s*6|lb6/i },
-      // The Arcadyan "Livebox Fibre" (ModelName ArcadyanLBFIBRE_OFR, ProductClass "Livebox Fibre") is a Livebox 5.
-      { id: "livebox_5", name: "Livebox 5", re: /livebox\s*5|lb5|arcadyanlbfibre/i },
+      // The "Livebox Fibre" (ProductClass) is a Livebox 5, by Arcadyan (ModelName ArcadyanLBFIBRE_OFR) or Sagemcom
+      // (SagemcomFast5656_OFR).
+      { id: "livebox_5", name: "Livebox 5", re: /livebox\s*5|lb5|arcadyanlbfibre|fast\s*5656/i },
       { id: "livebox_4", name: "Livebox 4", re: /livebox\s*4|lb4/i },
       { id: "livebox_s", name: "Livebox S", re: /livebox\s*s\b|lbs\b/i },
       // KPN (Netherlands) runs Livebox OS on its Box 12 (firmware V12.C…), supported by the same integration.
@@ -2407,11 +2874,29 @@ const OPERATORS = {
       rate_down: "down_rate", rate_up: "up_rate", missed: "callmissed", missed_total: "callers", wifi: "wifi_switch",
       mark_read: "cmissed_clear_btn", reboot: "restart_btn", wan: "connectivity",
     },
-    // On a fibre line (GPON or SFP) the integration creates no down_rate / up_rate sensor: the throughput comes from
-    // the WAN interface statistics, whose translation keys are built from the interface name (WAN_GPON_rate_rx).
+    // On a fibre line (GPON or SFP) the integration creates no xDSL down_rate / up_rate sensor: the throughput comes
+    // from the WAN interface statistics, whose translation keys are built from the interface name (WAN_GPON_rate_rx,
+    // or just fiber_rate_rx on the boxes that name the interface "fiber", juju35/ha-internet-box-card#114).
     // `alt` holds patterns on the translation key, used when the canonical key is missing (never Wi-Fi or Ethernet
     // interfaces, nor the DS-Lite tunnel).
-    alt: { rate_down: /^wan_(gpon|sfp)_rate_rx$/i, rate_up: /^wan_(gpon|sfp)_rate_tx$/i },
+    alt: { rate_down: /^(wan_(gpon|sfp)|fiber)_rate_rx$/i, rate_up: /^(wan_(gpon|sfp)|fiber)_rate_tx$/i },
+    // The box exposes fibre sensors (fiber_rx / fiber_tx byte counters, fiber_power_rx / fiber_power_tx): their mere
+    // presence means the line is fibre, used when the WAN status has no (or an unrecognised) link_type attribute
+    // (juju35/ha-internet-box-card#114).
+    fiberKey: /^fiber(_power)?_[rt]x$/i,
+    // Since Livebox 3.0.0 every interface shares one translation key (interface_rate_rx / _tx, the interface only a
+    // placeholder of the name): the WAN interface is then told by its name in the entity id, generated from the name in
+    // any language (sensor.livebox_wan_sfp_rate_rx, sensor.livebox_debit_recu_wan_sfp), never a sub-interface
+    // (wan_gpon_internet…) nor the DS-Lite tunnel. `veip0` is the GPON interface of the boxes with a built-in ONT.
+    // `optical_ont` is the WAN interface of the boxes behind an external ONT (Livebox 3 / 4: "Optical ONT").
+    altIface: {
+      keys: { rate_down: "interface_rate_rx", rate_up: "interface_rate_tx" },
+      re: /(^|_)(wan_(gpon|sfp)|veip0|optical_ont|fiber)(_rate_[rt]x)?(_\d+)?$/i,
+    },
+    // A box without a rate sensor the card knows (a Livebox 4 on fibre, juju35/ha-internet-box-card#114: no xDSL rate on
+    // a GPON line, and its WAN interface is not WAN_GPON / WAN_SFP / veip0) is still found by its WAN status binary
+    // sensor or its restart button, entities of the box device only.
+    anchorKeys: ["connectivity", "restart_btn"],
   },
   sfr_box: {
     platform: "sfr_box", name: "SFR Box", color: "#e2001a", logo: IMG_SFR,
@@ -2435,6 +2920,7 @@ const OPERATORS = {
     platform: "bbox", name: "Bbox", color: "#1246a0", logo: IMG_BBOX,
     website: "https://www.bouyguestelecom.fr", admin: "https://mabbox.bytel.fr",
     models: [
+      { id: "bbox_wifi7", name: "Bbox Wi-Fi 7", re: /wi-?fi\s*7|5696/i, pic: "generic_router" },
       { id: "bbox_fibre", name: "Bbox Fibre", re: /fibre|fiber/i },
       { id: "bbox_ultym", name: "Bbox Ultym", re: /ultym/i },
       { id: "bbox_miami", name: "Bbox Miami", re: /miami/i },
@@ -2442,8 +2928,16 @@ const OPERATORS = {
     // Legacy integration: hardcoded English names, no translation keys, so it is discovered by entity-id suffix.
     // The core `bbox` platform and its `custom_bbox` fork (hass_custom_bbox, for the firmwares that the core one can no
     // longer reach since Home Assistant 2022.7) create the same sensors, uptime included (a boot date).
-    keys: {},
     legacy: { rate_down: /_currently_used_download_bandwidth$/, rate_up: /_currently_used_upload_bandwidth$/, boot: /_uptime$/ },
+    // The "Bouygues Bbox" integration (hass-bbox2, custom, config flow) shares the `bbox` domain but registers a
+    // device and its entities. Its sensors have hardcoded English names and no translation key: they are matched by
+    // entity-id suffix (`ids`, only for the box's own entities without a key); its Wi-Fi switches have keys.
+    keys: { wifi: "wifi" },
+    ids: {
+      rate_down: /^sensor\..+_download_speed$/, rate_up: /^sensor\..+_upload_speed$/, boot: /^sensor\..+_uptime$/,
+      ip: /^sensor\..+_ip_address$/, ip6: /^sensor\..+_ipv6_address$/, wan: /^binary_sensor\..+_link_status$/,
+      reboot: /^button\..+_restart$/,
+    },
   },
   // FRITZ!Box (fritz, built in): AVM / FRITZ! routers, sold by 1&1, O2, Telekom and many providers in Germany,
   // Austria, Switzerland and the Netherlands. Traffic rates in kB/s, the DSL line sync rates (kept as sync rates,
@@ -2802,7 +3296,7 @@ const LINE_ICONS = {
 };
 const lineOf = (type, model) => {
   const t = `${type || ""} ${model || ""}`.toLowerCase();
-  return /ftth|fib|pon\b/.test(t)
+  return /ftth|fib|pon\b|ont\b|sfp\b/.test(t)
     ? "fibre"
     : /dsl/.test(t)
       ? "dsl"
@@ -2933,7 +3427,12 @@ const registry = (hass) => {
  *  fibre, a sensor) or the Wi-Fi (the FRITZ!Box main Wi-Fi switches, one per band). */
 const isAlt = (op, e, slot) =>
   !!(op.alt?.[slot] && (!/^rate_/.test(slot) || e.entity_id.startsWith("sensor.")) && op.alt[slot].test(e.translation_key || ""));
-const isAltRate = isAlt;
+/** True when the entity is the WAN interface's rate for a slot under a translation key shared by every interface
+ *  (Livebox 3.0.0 `interface_rate_rx`): the interface is read from the entity id (see `altIface`). */
+const isIfaceRate = (op, e, slot) =>
+  !!(op.altIface?.keys[slot] && e.translation_key === op.altIface.keys[slot] && e.entity_id.startsWith("sensor.") &&
+    op.altIface.re.test(e.entity_id.slice(e.entity_id.indexOf(".") + 1)));
+const isAltRate = (op, e, slot) => isAlt(op, e, slot) || isIfaceRate(op, e, slot);
 
 /** Tile label of a WAN latency sensor: its name without the word "latency", whatever the language Home Assistant
  *  named it in ("Google WAN Latenz" -> "Google WAN"); the whole name when nothing is left. */
@@ -2965,6 +3464,7 @@ const guessRate = (hass, e) => {
  *  entity id for a legacy one), or its downstream line sync rate for an operator without throughput sensors (SFR Box). */
 const isRateDown = (op, e) =>
   (op.keys.rate_down && e.translation_key === op.keys.rate_down) ||
+  (!e.translation_key && !!op.ids?.rate_down?.test(e.entity_id)) ||
   (op.keys.sync_down && e.translation_key === op.keys.sync_down) ||
   isAltRate(op, e, "rate_down") ||
   (op.legacy?.rate_down?.test(e.entity_id));
@@ -2976,12 +3476,18 @@ const isGatewayMark = (hass, op, e) =>
   (!!op.keys.wan && e.translation_key === op.keys.wan && op.gateway.test(hass.devices?.[e.device_id]?.model || "")) ||
   (op.gatewayKeys || []).includes(e.translation_key);
 
-/** True when an entity marks the box device: its download rate (see isRateDown), else, for an integration whose box
- *  has no rate sensor, its restart button (Sagemcom F@st), or a guessed download rate (ZTE Hyperbox). */
+/** Slot of a box entity without translation key matched by the operator's entity-id suffixes (hass-bbox2), or undefined. */
+const idSlot = (op, id) => op.ids && Object.keys(op.ids).find((slot) => op.ids[slot].test(id));
+
+/** True when an entity marks the box device: for an integration whose gateway shares its kind of entities with other
+ *  network devices (UniFi), its gateway mark (see isGatewayMark); else its download rate (see isRateDown), else one of
+ *  the operator's own box entities (`anchorKeys`: the Livebox WAN status and restart button), else, for an integration
+ *  whose box has no rate sensor, its restart button (Sagemcom F@st), or a guessed download rate (ZTE Hyperbox). */
 const isAnchor = (hass, op, e) =>
   op.gateway
     ? isGatewayMark(hass, op, e)
     : isRateDown(op, e) ||
+      (!!e.translation_key && !!op.anchorKeys?.includes(e.translation_key)) ||
   (op.anchorRestart && e.entity_id.startsWith("button.") && !e.translation_key && hass.states[e.entity_id]?.attributes?.device_class === "restart") ||
   (op.guess && guessRate(hass, e) === "down");
 
@@ -3097,17 +3603,73 @@ const emptyBox = () => ({ id: null, device: null, operator: null, lineType: null
  * registries (hass.entities, hass.devices) and the list of the operators' entities that have a state, not on
  * hass.states, which Home Assistant replaces on every state change.
  */
-// The Speedtest.net integration's last test: download, upload (Mbit/s) and ping (ms) sensors, by translation key. Not part
-// of the box: the same for every box card.
+// The last speed test: download, upload (Mbit/s) and ping (ms) sensors, by translation key, of the Speedtest.net
+// integration (else of Fast.com, download only). Not part of the box: the same for every box card. The `entities`
+// option's `speedtest` sets the sensors of another speed test (LibreSpeed, Speedtest Tracker…), and `run` the entity
+// that starts one (a button, a script…).
 const SPEEDTEST_KEYS = ["download", "upload", "ping"];
-const discoverSpeedtest = (hass) => {
-  const found = {};
+const SPEEDTEST_PLATFORMS = ["speedtestdotnet", "fastdotcom"];
+const isEntityId = (v) => typeof v === "string" && /^[a-z_]+\.[a-z0-9_]+$/.test(v);
+const discoverSpeedtest = (hass, config) => {
+  const byPlatform = {};
   for (const e of Object.values(hass.entities || {})) {
-    if (e.platform !== "speedtestdotnet" || e.hidden || !e.entity_id.startsWith("sensor.") || !SPEEDTEST_KEYS.includes(e.translation_key)) continue;
-    if (hass.states[e.entity_id]) found[e.translation_key] = e.entity_id;
+    if (!SPEEDTEST_PLATFORMS.includes(e.platform) || e.hidden || !e.entity_id.startsWith("sensor.") || !SPEEDTEST_KEYS.includes(e.translation_key)) continue;
+    if (hass.states[e.entity_id]) (byPlatform[e.platform] ??= {})[e.translation_key] = e.entity_id;
   }
-  return found.download || found.upload ? found : null;
+  const found = { ...(byPlatform.speedtestdotnet || byPlatform.fastdotcom || {}) };
+  const own = config?.entities?.speedtest;
+  if (own && typeof own === "object") {
+    const chosen = SPEEDTEST_KEYS.filter((k) => isEntityId(own[k]));
+    // Sensors of another speed test: theirs only, not mixed with Speedtest.net's
+    if (chosen.length) for (const k of SPEEDTEST_KEYS) found[k] = isEntityId(own[k]) ? own[k] : undefined;
+  }
+  for (const k of SPEEDTEST_KEYS) if (!found[k]) delete found[k];
+  if (!found.download && !found.upload) return null;
+  // How to start a test: the entity set in `run`, else a refresh of the Speedtest.net / Fast.com sensors (their
+  // integration runs a test on it); none for sensors of another speed test without `run`.
+  if (isEntityId(own?.run)) found.run = own.run;
+  else if (SPEEDTEST_PLATFORMS.includes(hass.entities?.[found.download || found.upload]?.platform)) found.run = found.download || found.upload;
+  return found;
 };
+
+// The `entities` option's box values: sensors of the user's choice, replacing those found on the box.
+const BOX_KEYS = ["rate_down", "rate_up", "sync_down", "sync_up", "ip", "boot", "wifi", "missed"];
+const withEntitiesCache = new WeakMap();
+const withEntities = (box, entities) => {
+  if (!box || !entities || typeof entities !== "object") return box;
+  const own = BOX_KEYS.filter((k) => isEntityId(entities[k]));
+  if (!own.length) return box;
+  const key = own.map((k) => `${k}=${entities[k]}`).join(",");
+  const hit = withEntitiesCache.get(box);
+  if (hit?.key === key) return hit.result;
+  const result = { ...box, scalars: { ...box.scalars, ...Object.fromEntries(own.map((k) => [k, entities[k]])) } };
+  withEntitiesCache.set(box, { key, result });
+  return result;
+};
+// The editor's pickers of `entities`, and the option without the ones left empty (none: no option).
+const EDITOR_ENTITIES = new Set(["rate_down", "rate_up", ...SPEEDTEST_KEYS, "run"]);
+// A speed test started from the card is shown running until its sensors are written again, at most this long.
+const SPEEDTEST_RUN_MS = 180e3;
+// The service that starts a speed test with the `run` entity: a button is pressed, a script or an automation run,
+// any other entity refreshed (homeassistant.update_entity).
+const runService = (id) => {
+  const domain = id.split(".")[0];
+  if (domain === "button" || domain === "input_button") return [domain, "press"];
+  if (domain === "script") return ["script", "turn_on"];
+  if (domain === "automation") return ["automation", "trigger"];
+  return ["homeassistant", "update_entity"];
+};
+const cleanEntities = (entities) => {
+  if (!entities || typeof entities !== "object") return undefined;
+  const out = {};
+  for (const [k, v] of Object.entries(entities)) {
+    const value = v && typeof v === "object" ? cleanEntities(v) : v;
+    if (value !== "" && value !== undefined && value !== null) out[k] = value;
+  }
+  return Object.keys(out).length ? out : undefined;
+};
+// The box a card shows: the one found, with the sensors of the `entities` option.
+const boxFor = (hass, config) => withEntities(discover(hass, config?.box), config?.entities);
 
 const discover = (hass, boxId) => {
   const found = registry(hass);
@@ -3164,6 +3726,12 @@ const discover = (hass, boxId) => {
         if (!own && !child) continue;
         const k = e.translation_key;
         const a = hass.states[id].attributes;
+        // Box sensors without translation key known by their entity-id suffix (hass-bbox2): the first one wins.
+        const slot = own && !k ? idSlot(op, id) : undefined;
+        if (slot) {
+          box.scalars[slot] ??= id;
+          continue;
+        }
         // Each data slot is matched by the operator's translation key, or by an entity-id pattern for a legacy one.
         // The canonical rate key wins over an alternate one (the alternate only fills an empty slot), and the
         // missed-calls sensor over the total of calls.
@@ -3199,8 +3767,8 @@ const discover = (hass, boxId) => {
         // A restart button with a translation key of its own is a reconnect button (FRITZ!Box `reconnect`, Vodafone
         // `dsl_reconnect`…), never the reboot.
         else if (own && domain === "button" && ((keys.reboot && k === keys.reboot) || (!k && a.device_class === "restart"))) box.scalars.reboot = id;
-        else if (keys.partition && k === keys.partition) box.partitions.push({ id, device: d });
-        else if (keys.raid && k === keys.raid) box.raids.push(id);
+        else if ((keys.partition && k === keys.partition) || (!k && op.childIds?.partition?.test(id))) box.partitions.push({ id, device: d });
+        else if ((keys.raid && k === keys.raid) || (!k && op.childIds?.raid?.test(id))) box.raids.push(id);
         // CPU and memory use in % (UniFi gateway), and the WAN latency sensors, one per monitored target and WAN.
         else if (own && domain === "sensor" && keys.cpu && k === keys.cpu) box.scalars.cpu = id;
         else if (own && domain === "sensor" && keys.ram && k === keys.ram) box.scalars.ram = id;
@@ -3209,6 +3777,9 @@ const discover = (hass, boxId) => {
         else if (own && domain === "sensor" && a.device_class === "temperature") box.temps.push({ id, name: shortName(hass, id, dev) });
         else if (own && domain === "sensor" && !k && /^(rpm|tr\/min)$/i.test(a.unit_of_measurement || ""))
           box.fans.push({ id, name: shortName(hass, id, dev) });
+        // A fibre sensor (fiber_rx / fiber_tx / fiber_power_*) is proof the line is fibre, for a box whose WAN
+        // status gives no usable link_type (juju35/ha-internet-box-card#114).
+        else if (own && op.fiberKey && k && op.fiberKey.test(k)) box.lineType ??= "fibre";
       }
       // The DSL line sync rates of a box that has them tell its kind of line (FRITZ!Box on DSL).
       if (op.syncLine && box.scalars.sync_down) box.lineType ??= op.syncLine;
@@ -3297,7 +3868,7 @@ const BASE_STYLE = `
      and graphics mix 40 % of the theme text colour (3:1), text 50 % (4.5:1). Mixing with --primary-text-color darkens
      them in a light theme and lightens them in a dark one (e.g. the dark blue Bbox accent on a dark card). Declared on
      ha-card, which carries the operator's --ibc-red. */
-  ha-card { overflow: hidden; position: relative; container-type: inline-size;
+  ha-card { overflow: hidden; position: relative; container-type: inline-size; container-name: ibc-card;
             --ibc-accent: color-mix(in srgb, var(--ibc-red) 60%, var(--primary-text-color)); }
   .icon { width: 18px; height: 18px; fill: currentColor; flex: none; }
   .muted { color: var(--secondary-text-color); }
@@ -3330,8 +3901,22 @@ const BASE_STYLE = `
      gets smaller (hidden up to 340 px on the full card), the status pill truncates its text (only its dot below 245 px) and the icon
      buttons never shrink. */
   .titles { flex: 1 1 0; min-width: 48px; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  :host([hide-title]) .titles > .name, :host([hide-subtitle]) .titles > .sub { display: none; }
   .titles > * { grid-column: 1; }
   .titles > .chip { grid-column: 2; grid-row: 1; align-self: center; margin-left: 10px; white-space: nowrap; min-width: 0; max-width: 100%; }
+  /* The status pill right after the title, when the whole title and the pill's whole label fit on that row (measured,
+     see _fitPill); otherwise on a line of its own under the subtitle (which keeps one line), else its dot alone. */
+  .trow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .trow > .name { flex: 0 1 auto; min-width: 0; }
+  .trow > .chip.status { flex: none; max-width: none; margin: 0; white-space: nowrap; }
+  /* The box picture giving way to the title and its pill (measured, see _fitPill). */
+  .header.pic-small .box { height: 26px; }
+  .header.pic-none .box-link { display: none; }
+  .header:not(.banner) .titles.below .trow { display: contents; }
+  .header:not(.banner) .titles.below .trow > .chip.status { grid-row: 3; justify-self: start; max-width: 100%; margin-top: 4px; }
+  .header:not(.banner) .titles.below .sub { max-height: 15px; line-height: 15px; }
+  .header:not(.banner) .titles.dot-only .trow > .chip.status { padding: 5px; } .header:not(.banner) .titles.dot-only .chip.status .txt { display: none; }
+  @container ibc-card (max-width: 200px) { .header:not(.banner) .trow > .chip.status { padding: 5px; } .header:not(.banner) .chip.status .txt { display: none; } }
   .chip.status { overflow: hidden; }
   .chip.status .txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .titles .chips { margin-top: 4px; }
@@ -3361,10 +3946,9 @@ const BASE_STYLE = `
   .tile { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; min-width: 0;
           background: var(--secondary-background-color, rgba(127,127,127,.08)); position: relative; overflow: hidden; }
   .tile > :not(.spark) { position: relative; }
-  .tile .spark { position: absolute; left: 0; bottom: 0; width: 100%; height: 55%; pointer-events: none; }
-  /* A tile with a chart is taller: the label and value at the top, the chart in a band of its own under them. */
-  .tile:has(> .spark) { align-items: flex-start; padding-bottom: 30px; }
-  .tile:has(> .spark) .spark { height: 28px; }
+  /* 24 h curve in its own 24 px band under the icon and the text, never behind them. */
+  .tile:has(> .spark) { padding-bottom: 30px; }
+  .tile .spark { position: absolute; inset: auto 0 0; width: 100%; height: 24px; pointer-events: none; }
   .spark-a { fill: color-mix(in srgb, var(--c) 12%, transparent); }
   .spark-l { fill: none; stroke: color-mix(in srgb, var(--c) 50%, transparent); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
   .tile .icon { color: color-mix(in srgb, var(--c, var(--ibc-red)) 60%, var(--primary-text-color)); }
@@ -3388,6 +3972,129 @@ const BASE_STYLE = `
   .action:disabled { cursor: default; opacity: .4; }
   .action:disabled:hover { background: none; color: var(--secondary-text-color); }
 `;
+
+// Illustrated header (the default; `illustration: false` keeps the classic one): a 90 px banner, the icon, title,
+// status and subtitle on the sky at its left, the internet scene at its right (at most 200 px wide, 62 % of the
+// card), and a 10 px network strip under the whole banner, edge to edge. Day and night colours.
+// The width of an element's whole text in its own font, in fractional pixels (scrollWidth is rounded).
+let textCtx;
+const textWidth = (el) => {
+  const cs = getComputedStyle(el);
+  textCtx ??= document.createElement("canvas").getContext?.("2d");
+  if (!textCtx) return el.scrollWidth;
+  textCtx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  return Math.max(el.scrollWidth, textCtx.measureText(el.textContent.trim()).width + pad);
+};
+
+const BANNER_STYLE = `
+  .banner { position: relative; overflow: hidden; height: 90px; padding: 0; gap: 0; display: block;
+            --g: 10px; --scene-w: min(200px, 62%); --sky-text: #0d2a45; --sky-muted: #3b5b78;
+            --sc-bg: #eaf2fb; --sc-dot: #c9dcf2; --sc-bed: #b9c9dc; --sc-dev: #fff; --sc-dev-line: #c9d2de; --sc-dev-icon: #5f6b7a;
+            --sc-wave: #2f80ed; --sc-pk: #43a047; --sc-dim: #9aa3ae;
+            background: var(--sc-bg); color: var(--sky-text); }
+  .banner.night { --sky-text: #fff; --sky-muted: rgba(255,255,255,.78);
+                  --sc-bg: #101827; --sc-dot: #22324d; --sc-bed: #2a3446; --sc-dev: #1d2a3d; --sc-dev-line: #33465f; --sc-dev-icon: #9fb3cf; }
+  .banner .scene { position: absolute; right: 0; bottom: var(--g); height: calc(100% - var(--g)); width: var(--scene-w); }
+  .banner .htext { position: absolute; left: 0; top: 0; bottom: var(--g); z-index: 1;
+                   display: flex; align-items: center; gap: 10px; padding: 0 8px 0 14px; min-width: 0; }
+  .banner .titles { flex: 1 1 0; display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; min-width: 48px; }
+  .banner .name { color: var(--sky-text); }
+  /* One subtitle line: device and firmware side by side, or the device alone when both do not fit. */
+  .banner .sub { color: var(--sky-muted); flex: none; height: 15px; line-height: 15px; }
+  /* The status pill on the title's row, in the state colour of the icon on frosted glass, when the whole title and the
+     pill's whole label fit there (measured, see _fitPill); otherwise the pill goes on a line of its own under the
+     subtitle; when that does not fit above the strip, or on a card of 200 px or less, its dot alone. */
+  .banner .trow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .banner .trow > .name { flex: 0 1 auto; min-width: 0; }
+  .banner .trow > .chip.status { flex: none; max-width: none; margin: 0; padding: 1px 8px; font-size: 11px; font-weight: 500; line-height: 16px;
+                                 white-space: nowrap; box-sizing: border-box;
+                                 background: color-mix(in srgb, var(--c) 18%, rgba(255,255,255,.78)); color: color-mix(in srgb, var(--c) 45%, #0d2a45); }
+  .banner.night .trow > .chip.status { background: color-mix(in srgb, var(--c) 30%, rgba(8,18,38,.55)); color: color-mix(in srgb, var(--c) 35%, #ffffff); }
+  .banner .trow > .chip.status .dot { width: 7px; height: 7px; }
+  .banner .trow > .chip.status .txt { display: block; }
+  .banner .titles.below .trow { display: contents; }
+  .banner .titles.below .trow > .chip.status { grid-row: 3; justify-self: start; max-width: 100%; margin-top: 3px; }
+  .banner .titles.dot-only .trow > .chip.status { padding: 4px; } .banner .titles.dot-only .trow > .chip.status .txt { display: none; }
+  @container ibc-card (max-width: 200px) { .banner .trow > .chip.status { padding: 4px; } .banner .trow > .chip.status .txt { display: none; } }
+  .banner + .content { padding-top: 12px; }
+  /* Round icon on the sky: translucent white, the icon in the state colour (online, syncing, offline, unavailable). */
+  .banner .logo-link { align-self: center; background: rgba(255,255,255,.62); box-shadow: inset 0 0 0 1px rgba(47,128,237,.18);
+                       --ibc-icon: color-mix(in srgb, var(--ibc-tint) 72%, #0d2a45); }
+  .banner.night .logo-link { background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+                             --ibc-icon: color-mix(in srgb, var(--ibc-tint) 62%, #fff); }
+  .banner .logo-link .icon.type .led { fill: #fff; }
+  .banner.night .logo-link .icon.type .led { fill: #1d2a3d; }
+  .banner .logo { box-shadow: 0 0 0 1px rgba(13,42,69,.16), 0 1px 3px rgba(13,42,69,.18); }
+  /* Restart and detail buttons, top right over the scene. */
+  .banner .hbtns { position: absolute; top: 5px; right: 5px; z-index: 2; display: flex; gap: 4px; }
+  .banner .hbtns .action, .banner .hbtns .zoom { margin: 0; width: 24px; height: 24px; padding: 0; border-radius: 50%; box-sizing: border-box;
+                                                 display: grid; place-items: center; color: #33506b; background: rgba(255,255,255,.55);
+                                                 box-shadow: inset 0 0 0 1px rgba(255,255,255,.7); backdrop-filter: blur(4px); }
+  .banner .hbtns .icon { width: 16px; height: 16px; }
+  .banner.night .hbtns .action, .banner.night .hbtns .zoom { color: #fff; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  .banner .hbtns .action:hover, .banner .hbtns .zoom:hover { background: rgba(255,255,255,.75); }
+  .banner.night .hbtns .action:hover, .banner.night .hbtns .zoom:hover { background: rgba(255,255,255,.22); }
+  .banner .hbtns .action:disabled { opacity: .5; }
+  /* The scene. */
+  .sc-dots { fill: var(--sc-dot); }
+  .sc-fibre-bed { stroke: var(--sc-bed); stroke-width: 4; stroke-linecap: round; fill: none; }
+  .sc-fibre { stroke: var(--sc-link); stroke-width: 2; stroke-linecap: round; fill: none; stroke-dasharray: 3 4; }
+  .sc-fibre.flow { stroke-dasharray: 4 26; animation: sc-flow 1.4s linear infinite; }
+  .sc-wait .sc-fibre.flow { animation-duration: 2.6s; }
+  .sc-wire { stroke: var(--sc-dim); stroke-width: 1; fill: none; stroke-dasharray: 2 3; }
+  .sc-wire.on { stroke: var(--sc-pk); }
+  .sc-pk { fill: var(--sc-pk); animation: sc-packet 1.4s linear infinite; }
+  .sc-dev { fill: var(--sc-dev); stroke: var(--sc-dev-line); }
+  .sc-dev-i { fill: none; stroke: var(--sc-dev-icon); stroke-width: 1.3; }
+  .sc-waves { fill: none; stroke: var(--sc-dim); stroke-width: 1.8; stroke-linecap: round; }
+  .sc-waves.on { stroke: var(--sc-wave); }
+  .sc-waves.on path { animation: sc-blink 1.5s infinite; }
+  .sc-waves.on .w2 { animation-delay: .25s; } .sc-waves.on .w3 { animation-delay: .5s; }
+  .sc-cut circle { fill: #e5484d; } .sc-cut path { stroke: #fff; stroke-width: 1.6; }
+  .sc-box { filter: drop-shadow(0 2px 2px rgba(0,0,0,.22)); }
+  /* At night a soft glow keeps the dark boxes (Livebox, Bbox) apart from the sky. */
+  .night .sc-box { filter: drop-shadow(0 0 3px rgba(150,185,230,.45)); }
+  a.sc-box { cursor: pointer; }
+  a.sc-box:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); }
+  /* The network strip: a cable with its light pulses, red and grey when the link is down. */
+  .ground { position: absolute; left: 0; right: 0; bottom: 0; height: var(--g); }
+  .g-net { background: #1e3a5f; background-image: repeating-linear-gradient(90deg, #4fc3f7 0 14px, transparent 14px 22px);
+           background-size: 100% 2px; background-repeat: no-repeat; background-position: 0 50%; box-shadow: inset 0 2px 0 #2f5a8a; }
+  .night .g-net { background-color: #0f1d33; box-shadow: inset 0 2px 0 #1e3a5f; }
+  .g-netdown { background: #5a6370; background-image: repeating-linear-gradient(90deg, #e5484d 0 6px, transparent 6px 16px);
+               background-size: 100% 2px; background-repeat: no-repeat; background-position: 0 50%; box-shadow: inset 0 2px 0 #77808c; }
+  .night .g-netdown { background-color: #2c323b; box-shadow: inset 0 2px 0 #3a414c; }
+  @keyframes sc-flow { to { stroke-dashoffset: -30; } }
+  @keyframes sc-blink { 50% { opacity: .2; } }
+  @keyframes sc-packet { from { offset-distance: 0%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { offset-distance: 100%; opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .sc-fibre.flow, .sc-waves.on path { animation: none; }
+    .sc-pk { display: none; }
+  }
+  /* Narrow card: a smaller scene, then the sky alone (the text keeps the room left of the buttons). */
+  /* The text stops where the scene starts (its open sky, x < 80, stays under the text), and before the buttons. */
+  .banner { --text-r: calc(var(--scene-w) * .6); --btns-w: 0px; }
+  .banner:has(.hbtns > *) { --btns-w: 36px; }
+  .banner:has(.hbtns > :nth-child(2)) { --btns-w: 64px; }
+  /* The scene moves left of the buttons: its devices and Wi-Fi waves stay clear of them. */
+  .banner .scene { right: var(--btns-w); }
+  .banner .htext { right: calc(var(--text-r) + var(--btns-w)); }
+  /* Narrower, a lower scene: its top stays under the buttons, it keeps to the right edge. */
+  @container (max-width: 400px) { .banner { --scene-w: 40%; --text-r: calc(var(--scene-w) * .5); } .banner .scene { right: 0; }
+                                  .banner .htext { right: max(var(--text-r), var(--btns-w)); }
+                                  .banner:has(.hbtns > *) .scene { height: calc(100% - var(--g) - 28px); } }
+  @container (max-width: 200px) { .banner .scene { display: none; } .banner { --text-r: var(--btns-w); } }
+`;
+
+// Night picture: forced by `illustration_theme`, else Home Assistant's dark theme alone (a light theme keeps the day
+// picture after sunset).
+const isNight = (hass, config) => {
+  const theme = config?.illustration_theme;
+  if (theme === "night") return true;
+  if (theme === "day") return false;
+  return !!hass?.themes?.darkMode;
+};
 
 // In-card confirmation popup, at the top of the card so it stays in view when the card is long.
 const DIALOG_STYLE = `
@@ -3442,7 +4149,46 @@ function spark(points, end, max = 0) {
 /** Time of a recorder statistics row in ms: a number (Home Assistant 2023.3 and later) or an ISO date string. */
 const statTime = (p) => (typeof p.start === "number" ? p.start : Date.parse(p.start));
 
+// "A click elsewhere" is caught on the pointer, not only on the click event: on iOS (Safari and the companion app)
+// a tap on something that is not clickable (the background, an empty spot, a card with no action) sends no click to
+// the page. The handler runs when the press and the release are both outside the card (a slider dragged out of the
+// card does not count, and a scroll cancels the pointer); keyboard clicks (no click count) still go through the click
+// event. The handler keeps its own checks (dialogs opened from the card…). `tap(ev)` is for the tests.
+const watchOutside = (card, handler) => {
+  let downOutside = false;
+  const outside = (ev) => !ev.composedPath().includes(card);
+  const onDown = (ev) => {
+    downOutside = outside(ev);
+  };
+  const onUp = (ev) => {
+    if (downOutside && outside(ev)) handler(ev);
+    downOutside = false;
+  };
+  const onClick = (ev) => {
+    if (ev.detail === 0) handler(ev);
+  };
+  return {
+    on() {
+      document.addEventListener("pointerdown", onDown, true);
+      document.addEventListener("pointerup", onUp, true);
+      document.addEventListener("click", onClick, true);
+    },
+    off() {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("pointerup", onUp, true);
+      document.removeEventListener("click", onClick, true);
+    },
+    tap(ev) {
+      onDown(ev);
+      onUp(ev);
+    },
+  };
+};
+
 class InternetBoxBase extends HTMLElement {
+  // The speed tests started from the cards, by the entity that starts them: { at, mark }.
+  static speedtestRuns = new Map();
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -3471,6 +4217,8 @@ class InternetBoxBase extends HTMLElement {
       if (action?.dataset.action === "restart") return this._confirmRestart();
       // The Wi-Fi switch turns the Wi-Fi on at once, and off after a confirmation popup.
       if (action?.dataset.action === "wifi") return this._toggleWifi();
+      // The speed test button starts a test (nothing while one runs).
+      if (action?.dataset.action === "speedtest") return this._runSpeedtest();
       const press = path.find((n) => n.dataset?.press);
       if (press) {
         this._press(press.dataset.press);
@@ -3513,21 +4261,35 @@ class InternetBoxBase extends HTMLElement {
         this._closeDialog(false);
       }
     };
-    document.addEventListener("click", this._onDialogOutside, true);
+    (this._onDialogOutsideWatch ??= watchOutside(this, (ev) => this._onDialogOutside(ev))).on();
+    // Back on the page after leaving it: rendered again in its default state.
+    this._update?.();
+    if (!this._fitObserver && typeof ResizeObserver === "function") this._fitObserver = new ResizeObserver(() => this._fitPill?.());
+    this._fitObserver?.observe(this);
+    document.fonts?.ready?.then(() => this._fitPill?.());
     // Reattached with the popup still open (view switch, editor): Escape keeps closing it.
     if (this._dialog) window.addEventListener("keydown", this._onKey);
   }
 
   disconnectedCallback() {
-    document.removeEventListener("click", this._onDialogOutside, true);
+    this._onDialogOutsideWatch?.off();
+    this._fitObserver?.disconnect();
+    // Left (another dashboard view, a conditional card hidden): back to the default state, so that the card does
+    // not come back unfolded or with its popup open.
+    this._dialog = null;
     window.removeEventListener("keydown", this._onKey);
+    clearTimeout(this._speedtestTimer);
   }
 
-  // Calls a Home Assistant service on an entity. A failed call is logged (Home Assistant already shows a toast).
-  _call(domain, service, entityId) {
+  // Calls a Home Assistant service on an entity. A failed call is logged (Home Assistant already shows a toast) and
+  // `onError` run.
+  _call(domain, service, entityId, onError) {
     Promise.resolve()
       .then(() => this._hass?.callService(domain, service, { entity_id: entityId }))
-      .catch((err) => console.error(`unifi-box-card: ${domain}.${service} failed`, err));
+      .catch((err) => {
+        console.error(`internet-box-card: ${domain}.${service} failed`, err);
+        onError?.();
+      });
   }
 
   // Presses a Home Assistant button entity.
@@ -3535,10 +4297,47 @@ class InternetBoxBase extends HTMLElement {
     this._call("button", "press", entityId);
   }
 
+  // When the speed test's results last came. Speedtest.net and Fast.com: when their sensor was last written
+  // (last_reported: also with the same values), the refresh that runs the test writing it once done. Another speed
+  // test: when its values last changed (last_updated), its integration may write them again on every poll.
+  _speedtestMark(sp) {
+    const st = this._s(sp.download) || this._s(sp.upload);
+    const refreshed = sp.run === sp.download || sp.run === sp.upload;
+    return `${refreshed ? (st?.last_reported ?? "") : ""}|${st?.last_updated ?? ""}`;
+  }
+
+  // A speed test started from a card runs until its results come, or SPEEDTEST_RUN_MS at most. Shared by the cards of
+  // the page (keyed by the entity that starts it): each shows it running.
+  _speedtestRunning(sp) {
+    const run = sp?.run && InternetBoxBase.speedtestRuns.get(sp.run);
+    if (!run) return false;
+    if (Date.now() - run.at < SPEEDTEST_RUN_MS && this._speedtestMark(sp) === run.mark) return true;
+    InternetBoxBase.speedtestRuns.delete(sp.run);
+    return false;
+  }
+
+  _runSpeedtest() {
+    const sp = discoverSpeedtest(this._hass, this._config);
+    if (!sp?.run || this._speedtestRunning(sp)) return;
+    const run = { at: Date.now(), mark: this._speedtestMark(sp) };
+    InternetBoxBase.speedtestRuns.set(sp.run, run);
+    const [domain, service] = runService(sp.run);
+    // A failed call: shown as stopped at once.
+    this._call(domain, service, sp.run, () => {
+      if (InternetBoxBase.speedtestRuns.get(sp.run) !== run) return;
+      InternetBoxBase.speedtestRuns.delete(sp.run);
+      this._update();
+    });
+    // Shown as stopped at the latest when the time is up, even without any state change.
+    clearTimeout(this._speedtestTimer);
+    this._speedtestTimer = setTimeout(() => this._update(), SPEEDTEST_RUN_MS + 50);
+    this._update();
+  }
+
   // Turns the box's Wi-Fi switch on, or opens a confirmation popup before turning it off (wireless devices lose
   // their connection). Nothing while the switch is unavailable, nor for an entity that is not a switch.
   _toggleWifi() {
-    const wifi = this._s(discover(this._hass, this._config.box).scalars.wifi);
+    const wifi = this._s(boxFor(this._hass, this._config).scalars.wifi);
     if (!wifi?.entity_id?.startsWith("switch.") || noValue(wifi)) return;
     const id = wifi.entity_id;
     if (wifi.state !== "on") return this._call("switch", "turn_on", id);
@@ -3564,7 +4363,7 @@ class InternetBoxBase extends HTMLElement {
 
   // Opens the restart confirmation popup; on confirmation, presses the box's reboot button.
   _confirmRestart() {
-    const box = discover(this._hass, this._config.box);
+    const box = boxFor(this._hass, this._config);
     const reboot = box.scalars.reboot;
     if (!reboot || this._s(reboot)?.state === "unavailable") return;
     this._openDialog({
@@ -3635,6 +4434,9 @@ class InternetBoxBase extends HTMLElement {
   setConfig(config) {
     if (!config) throw new Error("Invalid configuration");
     this._config = normalizeConfig(config);
+    // show_title / show_subtitle: the header's title / subtitle, hidden by the stylesheet
+    this.toggleAttribute?.("hide-title", config.show_title === false);
+    this.toggleAttribute?.("hide-subtitle", config.show_subtitle === false);
     this._html = "";
     this._update();
   }
@@ -3712,8 +4514,8 @@ class InternetBoxBase extends HTMLElement {
   // minute, for the uptime shown in days, hours and minutes.
   _signature() {
     const h = this._hass;
-    const sig = [h.entities, h.devices, h.language, h.locale?.language, h.config?.time_zone];
-    const box = discover(h, this._config.box);
+    const sig = [h.entities, h.devices, h.language, h.locale?.language, h.config?.time_zone, h.themes?.darkMode];
+    const box = boxFor(h, this._config);
     if (!box.id) return sig;
     const ids = [
       ...Object.values(box.scalars),
@@ -3725,7 +4527,9 @@ class InternetBoxBase extends HTMLElement {
       ...(box.latency || []).map((x) => x.id),
     ];
     for (const id of ids) sig.push(h.states[id]);
-    for (const id of Object.values(discoverSpeedtest(h) || {})) sig.push(h.states[id]);
+    const sp = discoverSpeedtest(h, this._config);
+    for (const id of Object.values(sp || {})) sig.push(h.states[id]);
+    sig.push(this._speedtestRunning(sp));
     if (this._s(box.scalars.router)?.attributes?.uptime || box.scalars.boot) sig.push(Math.floor(Date.now() / 60e3));
     return sig;
   }
@@ -3770,6 +4574,57 @@ class InternetBoxBase extends HTMLElement {
     if (html !== this._html) {
       this._html = html;
       morph(this.shadowRoot, html);
+    }
+    this._fitPill();
+  }
+
+  // The banner's status pill, measured after each render and on a new width (in every language): it sits on the
+  // title's row, right after the title, only when the whole title and the pill's whole label fit there; otherwise it
+  // takes a line of its own under the subtitle (.below), the title whole on its row (cut only when it does not fit
+  // alone) and the subtitle on one line. When the three lines do not fit in the banner above the ground strip, or
+  // the label does not fit its line, the pill shows its dot alone (.dot-only): beside the title when the whole title
+  // leaves it room, else under the subtitle.
+  _fitPill() {
+    for (const t of this.shadowRoot?.querySelectorAll?.(".header .titles") || []) {
+      const row = t.querySelector(".trow");
+      const chips = row ? [...row.querySelectorAll(":scope > .chip.status")] : [];
+      if (!chips[0]?.getBoundingClientRect) continue;
+      t.classList.remove("below", "dot-only");
+      const name = row.querySelector(".name");
+      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+      const outer = (c) => c.getBoundingClientRect().width + (parseFloat(getComputedStyle(c).marginLeft) || 0) + (parseFloat(getComputedStyle(c).marginRight) || 0);
+      const others = [...row.children].filter((c) => c !== name && !chips.includes(c) && c.getClientRects().length);
+      const roomOf = () => row.getBoundingClientRect().width - others.reduce((w, c) => w + outer(c) + gap, 0);
+      const title = name && getComputedStyle(name).display !== "none" ? textWidth(name) + gap : 0;
+      const pills = () => chips.reduce((w, c) => w + c.getBoundingClientRect().width, gap * (chips.length - 1));
+      // The classic header's box picture gives way to the title and its pill: smaller (.pic-small), then hidden
+      // (.pic-none), the first step that leaves the whole title and the pill's whole label on one row. When none does,
+      // the first step that leaves the whole title and the whole pill each on its own line, else no picture.
+      const header = t.closest(".header");
+      const pic = !header.classList.contains("banner") && header.querySelector(":scope > .box-link");
+      header.classList.remove("pic-small", "pic-none");
+      const steps = pic && pic.getClientRects().length ? ["", "pic-small", "pic-none"] : [""];
+      const set = (step) => {
+        header.classList.remove("pic-small", "pic-none");
+        if (step) header.classList.add(step);
+      };
+      const beside = steps.find((step) => (set(step), title + pills() <= roomOf()));
+      if (beside !== undefined) continue;
+      set(steps.find((step) => (set(step), title - gap <= row.getBoundingClientRect().width && pills() <= t.getBoundingClientRect().width + 0.5)) ?? steps.at(-1));
+      const room = roomOf();
+      t.classList.add("below");
+      const banner = t.closest(".banner") || t;
+      const ground = banner.querySelector(".ground");
+      const floor = ground ? ground.getBoundingClientRect().top : banner.getBoundingClientRect().bottom;
+      const box = t.getBoundingClientRect();
+      // Whole: the label not cut and the pill not past the title block (into the picture).
+      const whole = chips.every((c) => {
+        const tx = c.querySelector(".txt");
+        return (!tx || tx.scrollWidth <= tx.clientWidth + 0.5) && c.getBoundingClientRect().right <= box.right + 0.5;
+      });
+      if (whole && box.bottom <= floor + 0.5 && box.top >= banner.getBoundingClientRect().top - 0.5) continue;
+      t.classList.add("dot-only");
+      if (title + pills() <= room) t.classList.remove("below");
     }
   }
 
@@ -3867,13 +4722,41 @@ class InternetBoxBase extends HTMLElement {
     // The box picture only when the operator has a matching model drawing.
     // The generic form factors take the provider's colour; the French operators' drawings keep their own.
     const boxImg = modelPic(model, op.color) || null;
+    if (c.illustration !== false) {
+      // Illustrated banner: the status pill on the title's row (under the device / firmware when there is no room); the
+      // header chips (Wi-Fi, when the Services section is hidden) move to the top of the content.
+      const link = this._link(box);
+      const wifi = this._s(box.scalars.wifi);
+      const scene = { ok: "ok", warn: "wait", crit: "down", off: "off" }[link?.cls] || "ok";
+      const svg = sceneSvg({
+        state: scene,
+        wifi: !wifi || wifi.state !== "off",
+        pic: c.show_image !== false ? boxImg : null,
+        fit: boxImg ? PIC_FIT[model.pic ?? model.id] : null,
+        href: adminUrl,
+        label: `${model?.name || op.name} · ${this._t("admin")}`,
+      });
+      const btns = `${withChips ? this._restartBtn(box) : ""}${this._headerEnd()}`;
+      return `
+      <div class="header banner${isNight(this._hass, c) ? " night" : ""}">
+        ${svg}
+        <div class="ground ${scene === "down" ? "g-netdown" : "g-net"}"></div>
+        <div class="htext">
+          ${c.show_logo !== false ? brand : ""}
+          <div class="titles">
+            <div class="trow"><div class="name">${esc(name)}</div>${this._statusPill(box)}</div>
+            ${sub.length ? `<div class="sub"><div class="parts">${sub.map((x) => `<span>${esc(x)}</span>`).join("")}</div></div>` : ""}
+          </div>
+        </div>
+        ${btns ? `<div class="hbtns">${btns}</div>` : ""}
+      </div>`;
+    }
     return `
       <div class="header">
         ${c.show_logo !== false ? brand : ""}
         <div class="titles">
-          <div class="name">${esc(name)}</div>
-          ${withChips ? this._statusPill(box) : ""}
-          <div class="sub"><div class="parts">${sub.map((x) => `<span>${esc(x)}</span>`).join("")}</div></div>
+          <div class="trow"><div class="name">${esc(name)}</div>${this._statusPill(box)}</div>
+          <div class="sub" title="${esc(sub.join(" · "))}"><div class="parts">${sub.map((x) => `<span>${esc(x)}</span>`).join("")}</div></div>
           ${withChips ? this._chips(box) : ""}
         </div>
         ${
@@ -3925,6 +4808,11 @@ const FULL_STYLE = `
   .facts { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; margin-top: 6px; }
   .facts > span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
   .facts .icon { width: 14px; height: 14px; color: var(--secondary-text-color); }
+  .facts .speedtest-fact > span { display: inline-flex; align-items: center; gap: 4px; }
+  :is(.facts, .section-title) .run { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; margin-left: 2px; border: none;
+    border-radius: 50%; cursor: pointer; background: transparent; color: inherit; }
+  :is(.facts, .section-title) .run:hover:not([aria-disabled]) { background: color-mix(in srgb, var(--primary-color) 15%, transparent); }
+  :is(.facts, .section-title) .run[aria-disabled] { cursor: progress; }
   .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 6px; }
   .gauge { display: flex; flex-direction: column; align-items: center; position: relative; }
   .gauge .val .icon { width: 14px; height: 14px; color: var(--secondary-text-color); }
@@ -3984,21 +4872,11 @@ const FULL_STYLE = `
      restart button, so on a narrow card the box picture gets smaller to leave room for the title, then is hidden.
      The compact mini keeps its full-size picture (MINI_STYLE). */
   @container (max-width: 460px) { .box { height: 38px; } }
-  /* Up to 440 px the title, the status pill next to it and the restart button need the whole header: with the
-     picture the title would be squeezed by the whole pill text (up to 135 px, "Fuera de línea · FTTH"). */
-  @container (max-width: 440px) { .box-link { display: none; } }
-  /* The status pill sits top right, next to the title. Only on a narrow card (up to 340 px, where the box picture is
-     already hidden) would it squeeze the title on its line: there it moves below the title (in the first column,
-     under the name) so the title keeps the full width. */
-  @container (max-width: 340px) {
-    .titles > .chip.status { grid-column: 1; grid-row: auto; align-self: start; justify-self: start; margin: 4px 0 0; }
-  }
-  /* Narrower still (below 9 columns of a phone section): only the pill's coloured dot, back on the title line (its
-     text stays its tooltip and label). */
-  @container (max-width: 244px) {
-    .titles > .chip.status { grid-column: 2; grid-row: 1; align-self: center; justify-self: end; margin: 0 0 0 6px; padding: 5px; }
-    .chip.status .txt { display: none; }
-  }
+  @container (max-width: 380px) { .box { height: 32px; } }
+  /* Up to 340 px (9 to 12 columns of a phone section) the title, the status pill under it and the restart button
+     need the whole header: with the picture the title block would be narrower than the whole pill text (up to
+     135 px, "Fuera de línea · FTTH"). */
+  @container (max-width: 340px) { .box-link { display: none; } }
   /* At 6 columns of a narrow section: the dot goes to the subtitle line, the title takes the whole first line. */
   @container (max-width: 200px) {
     .titles > .name { grid-column: 1 / -1; }
@@ -4036,7 +4914,7 @@ class InternetBoxCard extends InternetBoxBase {
   }
 
   _render() {
-    const box = discover(this._hass, this._config.box);
+    const box = boxFor(this._hass, this._config);
     if (!box.id) return this._noBox();
     const c = this._config;
     const hist = this._fullHistory(box);
@@ -4050,7 +4928,9 @@ class InternetBoxCard extends InternetBoxBase {
     const parts = sectionOrder(c)
       .filter((name) => c[`show_${name}`] !== false)
       .map((name) => render[name]());
-    return `<style>${BASE_STYLE}${FULL_STYLE}</style>
+    // With the illustrated banner, the header chips open the content.
+    if (c.illustration !== false) parts.unshift(this._chips(box));
+    return `<style>${BASE_STYLE}${FULL_STYLE}${c.illustration !== false ? BANNER_STYLE : ""}</style>
       <ha-card style="--ibc-red:${brandOf(box, this._config).color}">
         ${this._header(box, true)}
         <div class="content">${parts.filter(Boolean).join("")}</div>
@@ -4065,7 +4945,7 @@ class InternetBoxCard extends InternetBoxBase {
     const sc = box.scalars;
     const ids = [
       ...(c.show_network !== false ? [sc.rate_down, sc.rate_up, ...this._latencies(box).map((x) => x.id)] : []),
-      ...(c.show_speedtest !== false ? Object.values(discoverSpeedtest(this._hass) || {}) : []),
+      ...(c.show_speedtest !== false ? (({ download, upload, ping } = {}) => [download, upload, ping])(discoverSpeedtest(this._hass, c) || {}) : []),
     ].filter(Boolean);
     return ids.length ? this._history(ids) : null;
   }
@@ -4124,7 +5004,7 @@ class InternetBoxCard extends InternetBoxBase {
   // The last Speedtest.net test, a section of its own: a download and an upload tile side by side, each with the
   // results of the last 24 hours under it, the ping as a pill next to the title and the time of the test under the tiles.
   _speedtest(hist = null) {
-    const sp = discoverSpeedtest(this._hass);
+    const sp = discoverSpeedtest(this._hass, this._config);
     if (!sp) return "";
     const dl = this._s(sp.download);
     const ul = this._s(sp.upload);
@@ -4150,10 +5030,22 @@ class InternetBoxCard extends InternetBoxBase {
       ? new Date(when).toLocaleString(numLang(this._hass, this._config), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
       : "";
     return `<div>
-      <div class="section-title">${svgIcon(ICONS.speedtest)}${this._t("speedtest")}${pill}</div>
+      <div class="section-title">${svgIcon(ICONS.speedtest)}${this._t("speedtest")}${this._speedtestButton(sp)}${pill}</div>
       ${tiles.length ? `<div class="grid2">${tiles.join("")}</div>` : ""}
       ${at ? `<div class="facts"><span>${svgIcon(ICONS.clock)}${esc(at)}</span></div>` : ""}
     </div>`;
+
+  }
+
+  // The button that starts a speed test, its icon turning while the test runs. aria-disabled, not disabled, while it
+  // runs: the button keeps the keyboard focus.
+  _speedtestButton(sp) {
+    if (!sp.run || this._s(sp.run)?.state === "unavailable") return "";
+    const running = this._speedtestRunning(sp);
+    const label = esc(this._t(running ? "speedtest_running" : "run_speedtest"));
+    return `<button type="button" class="run" data-action="speedtest" title="${label}" aria-label="${label}"${
+      running ? ' aria-busy="true" aria-disabled="true"' : ""
+    }>${svgIcon(ICONS.refresh, running ? "spin" : "")}</button>`;
   }
 
   _system(box) {
@@ -4329,12 +5221,17 @@ class InternetBoxMiniCard extends InternetBoxCard {
 
   connectedCallback() {
     super.connectedCallback?.();
-    document.addEventListener("click", this._onOutside, true);
+    (this._onOutsideWatch ??= watchOutside(this, (ev) => this._onOutside(ev))).on();
+    // Back on the page after leaving it: rendered again in its default state.
+    this._update?.();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback?.();
-    document.removeEventListener("click", this._onOutside, true);
+    this._onOutsideWatch?.off();
+    // Left (another dashboard view, a conditional card hidden): back to the default state, so that the card does
+    // not come back unfolded or with its popup open.
+    this._zoomed = false;
   }
 
   getCardSize() {
@@ -4362,7 +5259,7 @@ class InternetBoxMiniCard extends InternetBoxCard {
   }
 
   _renderMini() {
-    const box = discover(this._hass, this._config.box);
+    const box = boxFor(this._hass, this._config);
     if (!box.id) return this._noBox();
     const c = this._config;
     const sc = box.scalars;
@@ -4417,7 +5314,7 @@ class InternetBoxMiniCard extends InternetBoxCard {
     }
     const up = this._uptime(router, box);
     if (up !== null) foot.push(`<span data-key="uptime">${svgIcon(ICONS.timer)}${fmtUptime(up, this._hass, this._config)}</span>`);
-    return `<style>${BASE_STYLE}${MINI_STYLE}</style>
+    return `<style>${BASE_STYLE}${MINI_STYLE}${c.illustration !== false ? BANNER_STYLE : ""}</style>
       <ha-card style="--ibc-red:${brandOf(box, this._config).color}">
         ${this._header(box, false)}
         <div class="content">
@@ -4476,8 +5373,11 @@ class InternetBoxEditorBase extends HTMLElement {
         type: "grid",
         name: "",
         schema: [
+          { name: "show_title", selector: { boolean: {} } },
+          { name: "show_subtitle", selector: { boolean: {} } },
           { name: "show_image", selector: { boolean: {} } },
           { name: "show_logo", selector: { boolean: {} } },
+          { name: "illustration", selector: { boolean: {} } },
           ...this.constructor.toggles.map((name) => ({ name, selector: { boolean: {} } })),
         ],
       },
@@ -4490,6 +5390,11 @@ class InternetBoxEditorBase extends HTMLElement {
             },
           ]
         : []),
+      // Day / night picture of the illustrated header: automatic (Home Assistant's theme) unless forced.
+      {
+        name: "illustration_theme",
+        selector: { select: { mode: "dropdown", options: ["auto", "day", "night"].map((v) => ({ value: v, label: tr(`theme_${v}`) })) } },
+      },
       // Warning / critical thresholds, shown at their default values.
       {
         type: "grid",
@@ -4498,6 +5403,25 @@ class InternetBoxEditorBase extends HTMLElement {
           name,
           selector: { number: { min: 0, max: name.startsWith("temp") ? 150 : 100, step: 1, mode: "box", unit_of_measurement: name.startsWith("temp") ? "°C" : "%" } },
         })),
+      },
+      // Sensors of the user's choice: the box's rates, and another speed test than Speedtest.net (LibreSpeed…). Saved under
+      // `entities`, as the YAML option (which takes the other box values too).
+      {
+        type: "expandable",
+        name: "entities",
+        title: tr("entities"),
+        schema: [
+          ...["rate_down", "rate_up"].map((name) => ({ name, selector: { entity: { domain: "sensor" } } })),
+          {
+            type: "expandable",
+            name: "speedtest",
+            title: tr("speedtest"),
+            schema: [
+              ...SPEEDTEST_KEYS.map((name) => ({ name, selector: { entity: { domain: "sensor" } } })),
+              { name: "run", selector: { entity: { domain: ["button", "input_button", "script", "automation"] } } },
+            ],
+          },
+        ],
       },
       {
         name: "rate_unit",
@@ -4551,11 +5475,12 @@ class InternetBoxEditorBase extends HTMLElement {
     if (!this._hass || !this._config) return;
     if (!this._form) {
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => t(this._hass, this._config, s.name);
+      // The pickers of `entities` share their names with no other field: their own labels.
+      this._form.computeLabel = (s) => t(this._hass, this._config, EDITOR_ENTITIES.has(s.name) ? `ent_${s.name}` : s.name);
       this._form.computeHelper = (s) => (STRINGS.en[`${s.name}_helper`] ? t(this._hass, this._config, `${s.name}_helper`) : undefined);
       this._form.addEventListener("value-changed", (ev) => {
         ev.stopPropagation();
-        const config = { ...ev.detail.value };
+        const config = { ...ev.detail.value, entities: cleanEntities(ev.detail.value.entities) };
         // Another box of another operator: a model picked for the former one is not among the new operator's
         // models (and would be silently ignored), so it is cleared.
         if (config.box !== this._config.box && config.model) {
@@ -4575,7 +5500,8 @@ class InternetBoxEditorBase extends HTMLElement {
             v === "" ||
             v === undefined ||
             v === null ||
-            ((k.startsWith("show_") || k === "zoom") && v === true) ||
+            ((k.startsWith("show_") || k === "zoom" || k === "illustration") && v === true) ||
+            (k === "illustration_theme" && v === "auto") ||
             (k === "rate_unit" && v === "bytes") ||
             THRESHOLDS[k] === v
           )
@@ -4594,9 +5520,9 @@ class InternetBoxEditorBase extends HTMLElement {
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
       }
     }
-    const data = { rate_unit: "bytes", model: "", ...THRESHOLDS, ...this._config };
+    const data = { rate_unit: "bytes", model: "", illustration_theme: "auto", ...THRESHOLDS, ...this._config };
     if (this.constructor.sections) data.section_order = sectionOrder(this._config);
-    for (const name of ["show_image", "show_logo", ...this.constructor.toggles]) if (data[name] === undefined) data[name] = true;
+    for (const name of ["show_title", "show_subtitle", "show_image", "show_logo", "illustration", ...this.constructor.toggles]) if (data[name] === undefined) data[name] = true;
     this._form.hass = this._hass;
     this._form.data = data;
     // The schema is rebuilt on every hass update (every state change) but only handed to the form when its

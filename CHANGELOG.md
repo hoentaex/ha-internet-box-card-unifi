@@ -1,5 +1,75 @@
 # Changelog
 
+## 3.6.1-unifi.1 - 2026-11-18
+
+### Features
+- Merged the original card up to 3.6.1: the **animated illustrated header** (90 px banner with the title and the status pill on the sky, the box with its Wi-Fi waves and the fibre in the ground strip, night picture with the dark theme, `illustration` / `illustration_theme` options), the speed test button, `show_title` / `show_subtitle`, sensors of your choice and the fixes of 3.2 to 3.6.1.
+- The UniFi additions stay: gateway detection, CPU / RAM gauges, WAN latency tiles, the speed test section (now with its start button next to the title) and `section_order`.
+
+## 3.6.1 - 2026-11-18
+
+### Fixes
+- Illustrated header: `auto` now follows the Home Assistant theme alone — a light theme keeps the day picture after sunset, a dark theme still shows the night one.
+
+## 3.6.0 - 2026-11-17
+
+### Features
+- Animated illustrated header on the full card and the mini card: a 90 px banner with the title and its link status pill (dot and label in the icon's state colour, beside the title only when the whole title and its whole label fit there, measured in every language, else on its own line under the device / firmware, which then keeps one line; its dot alone when its label does not fit there or above the strip, and on cards of 200 px or less; the classic header (`illustration: false`) follows the same rule, the mini card's included, its box picture shrinking then hiding first to leave the whole title and label room) and the device / firmware on its sky, and an internet scene at its right: the fibre arriving into the box with its light pulses, the Wi-Fi waves and packets to the connected devices (laptop, phone, TV), the box model drawn big (the card's own drawing, clickable to the admin interface) and a 10 px network strip under the whole banner. Offline, the fibre is cut (red cross), the Wi-Fi is off and the strip turns red and grey; while the DSL line syncs the flow slows down in orange; with the Wi-Fi switched off the waves go grey. The header icon keeps the state colour and the operator logo badge.
+- Night picture after sunset (`sun.sun`) or in Home Assistant's dark mode; `illustration_theme: day | night` forces it. `illustration: false` keeps the classic header. Both options are in the visual editor of both cards, translated in the 22 languages. The animations stop with the system's reduced motion setting.
+- The restart and expand / collapse buttons sit in the banner's top-right corner as 24 px frosted round buttons, the scene keeping clear of them.
+- Night picture with the dark theme even while the sun is up.
+
+### Fixes
+- The 24 h sparklines of the download / upload tiles no longer run under the rate: they sit in a 24 px band of their own under the icon and the text.
+
+## 3.5.4 - 2026-11-15
+
+### Fixes
+- Livebox 4 on fibre, follow-up to [#114](https://github.com/juju35/ha-internet-box-card/issues/114): on the boxes whose fibre WAN interface is named `fiber` (entities `sensor.livebox_4_fiber_*`), the line is now detected as fibre from the presence of the fibre sensors (`fiber_rx` / `fiber_tx` byte counters, `fiber_power_*`), even when the WAN status reports no usable `link_type`, and the `fiber_rate_rx` / `fiber_rate_tx` interface rates are taken as the download / upload rates. A WAN status whose link type is `ONT` or `SFP` is also recognised as fibre.
+
+## 3.5.3 - 2026-11-14
+
+### Fixes
+- Livebox 4 on fibre ([#114](https://github.com/juju35/ha-internet-box-card/issues/114)): the box is found again, instead of "No internet box found". On a GPON line the Livebox integration creates no xDSL rate sensor, and the Livebox 4, behind an external ONT, has no `WAN_GPON` / `WAN_SFP` / `veip0` interface, so the card had nothing to find it by. A Livebox is now also found by its WAN status binary sensor or its restart button, and the rates of its `Optical ONT` interface are taken as the download / upload rates.
+
+## 3.5.2 - 2026-11-14
+
+### Fixes
+- Freebox: a box whose integration gives its entities no translation key (hardcoded English names, as in the core Freebox integration) is found again, instead of "No internet box found". Its download and upload rates, missed calls, Wi-Fi switch, call and reboot buttons, disk partitions and RAID arrays are matched by their entity-id suffix, only when the entity has no translation key.
+
+## 3.5.1 - 2026-11-13
+
+### Fixes
+- Folding back on a tap elsewhere now works on iOS (Safari and the companion app): a tap on something that is not clickable sent no click to the page, so the restart confirmation popup and the detail view of the mini card stayed open. The press and the release are caught instead; a slider dragged out of the card and a scroll do not fold anything, and keyboard clicks still work.
+- Leaving the card (another dashboard view, a conditional card hidden) brings it back in its default state, instead of coming back unfolded or with its popup open.
+
+## 3.5.0 - 2026-11-12
+
+### Features
+- **Speed test button** ([#107](https://github.com/juju35/ha-internet-box-card/issues/107)): a button next to the last speed test runs a new one. With Speedtest.net or Fast.com, it refreshes their sensors (the integration runs a test); with another speed test, it uses the entity set in `entities.speedtest.run` (a button or an `input_button` pressed, a script run, an automation triggered), also in the visual editor. Its icon turns, and it can't be pressed again, until the new results come (3 minutes at most), on every card of the page showing that speed test; a failed call stops it at once. The README screenshots show the speed test.
+
+## 3.4.0 - 2026-11-12
+
+### Features
+- `show_title` and `show_subtitle` options (also in the visual editor) hide the header's title and its subtitle, separately, for a card placed under a section heading of its own (asked in juju35/ha-vehicle-card#72).
+
+## 3.3.0 - 2026-11-11
+
+### Features
+- **Sensors of your choice** ([#100](https://github.com/juju35/ha-internet-box-card/issues/100)): `entities` sets the sensors of another speed test than Speedtest.net (`speedtest`: `download`, `upload`, `ping`, from LibreSpeed, Speedtest Tracker or a sensor of your own) and of the box's values (`rate_down`, `rate_up`, `sync_down`, `sync_up`, `ip`, `boot`, `wifi`, `missed`). The box rates and the speed test can be picked in the visual editor, under **Sensors of your choice**.
+- **Fast.com**: its last test (download) shows when Speedtest.net is not set up.
+
+## 3.2.1 - 2026-11-11
+
+### Fixes
+- **Livebox** on fibre not found with the Livebox integration 3.0.0 ([#98](https://github.com/juju35/ha-internet-box-card/issues/98)): since that release every interface rate shares the translation key `interface_rate_rx` / `interface_rate_tx` instead of one built from the interface name, so the `WAN_GPON` / `WAN_SFP` rates were no longer recognised. The WAN interface (`WAN_GPON`, `WAN_SFP`, or `veip0` on the boxes with a built-in ONT) is now also told by its name in the entity id, in any language; never a sub-interface nor the DS-Lite tunnel. The keys of the earlier releases still work.
+- **Livebox 5** by Sagemcom (`SagemcomFast5656_OFR`, "Livebox Fibre") detected and drawn as a Livebox 5, like the Arcadyan one.
+
+## 3.2.0 - 2026-11-11
+
+### Features
+- **Bbox**: the "Bouygues Bbox" integration ([hass-bbox2](https://github.com/cyr-ius/hass-bbox2), custom, config flow) is supported. It shares the `bbox` domain with the legacy platform but registers a device whose sensors have no translation key, so the box was not found ([#93](https://github.com/juju35/ha-internet-box-card/issues/93)). Its download / upload rates, link status, public IPv4 / IPv6, uptime, Wi-Fi switch, connected devices and restart button are recognised by their entity-id suffix.
+- **Bbox Wi-Fi 7** model (`bbox_wifi7`, Sagemcom F@st 5696b), detected from the hass-bbox2 device model, drawn with the generic router silhouette.
 ## 3.1.0-unifi.7 - 2026-11-13
 
 ### Changes

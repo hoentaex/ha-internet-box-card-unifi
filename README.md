@@ -104,6 +104,8 @@ model: unifi_cloud_gateway_ultra
 admin_url: https://unifi.ui.com
 show_image: true
 show_logo: true
+illustration: true
+illustration_theme: auto
 show_network: true
 show_history: true
 show_speedtest: true
@@ -141,6 +143,8 @@ rate_unit: bits
 | `admin_url` | both | `https://unifi.ui.com` | Address opened when clicking the gateway picture |
 | `show_image` | both | `true` | Show the gateway picture |
 | `show_logo` | both | `true` | Show the header icon, coloured with the link state |
+| `illustration` | both | `true` | Illustrated header (from the original card 3.6): a 90 px banner with the title and the status pill on the sky, the gateway drawn big with its Wi-Fi waves, the fibre in the strip under it. `false` keeps the classic header |
+| `illustration_theme` | both | `auto` | `day` or `night` picture; `auto` follows Home Assistant's dark theme |
 | `show_network` | both | `true` | Download / upload, WAN latency and uptime |
 | `show_history` | both | `true` | 24 h curves under the rate, latency and speed test tiles, from the recorder's 5-minute statistics |
 | `show_speedtest` | full | `true` | The last Speedtest.net test, a section of its own, when that integration is set up |

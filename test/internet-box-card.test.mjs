@@ -223,6 +223,101 @@ test("Livebox on fibre: discovered and rated from the WAN GPON interface statist
   assert.equal(boxModel(box, {}).id, "livebox_5");
 });
 
+test("Livebox 3.0.0 on fibre: the WAN interface rate under the shared interface_rate key, Sagemcom Livebox 5 (#98)", () => {
+  // Since Livebox 3.0.0 every interface rate has the translation key interface_rate_rx / _tx: the WAN interface is
+  // told by its name in the entity id, generated in the language of Home Assistant.
+  const devs = { lb: { id: "lb", name: "Livebox Fibre", model: "SagemcomFast5656_OFR", manufacturer: "Sagemcom", config_entries: ["e"] } };
+  const ent = (entity_id, translation_key) => ({ entity_id, platform: "livebox", translation_key, device_id: "lb" });
+  const mk = (ids) => {
+    const entities = {};
+    const states = {};
+    for (const [id, k] of ids) {
+      entities[id] = ent(id, k);
+      states[id] = st("12.5", { unit_of_measurement: "Mbit/s" });
+    }
+    return { states, entities, devices: devs };
+  };
+  // French entity ids, the Wi-Fi, Ethernet, a sub-interface and the DS-Lite tunnel listed first.
+  const fr = mk([
+    ["sensor.livebox_fibre_debit_recu_2_4ghz_private_ssid", "interface_rate_rx"],
+    ["sensor.livebox_fibre_debit_recu_eth1", "interface_rate_rx"],
+    ["sensor.livebox_fibre_debit_recu_wan_sfp_internet", "interface_rate_rx"],
+    ["sensor.livebox_fibre_debit_recu_wan_ds_lite_tunnel", "interface_rate_rx"],
+    ["sensor.livebox_fibre_debit_recu_wan_sfp", "interface_rate_rx"],
+    ["sensor.livebox_fibre_debit_emis_eth1", "interface_rate_tx"],
+    ["sensor.livebox_fibre_debit_emis_wan_sfp", "interface_rate_tx"],
+  ]);
+  assert.equal(JSON.stringify(listBoxes(fr)), JSON.stringify([{ value: "lb", label: "Livebox Fibre" }]));
+  const box = discover(fr, "lb");
+  assert.equal(box.scalars.rate_down, "sensor.livebox_fibre_debit_recu_wan_sfp");
+  assert.equal(box.scalars.rate_up, "sensor.livebox_fibre_debit_emis_wan_sfp");
+  // English entity ids, GPON and the veip0 interface of the boxes with a built-in ONT.
+  const en = discover(mk([["sensor.livebox_wan_gpon_rate_rx", "interface_rate_rx"], ["sensor.livebox_wan_gpon_rate_tx", "interface_rate_tx"]]), "lb");
+  assert.equal(en.scalars.rate_down, "sensor.livebox_wan_gpon_rate_rx");
+  const veip = discover(mk([["sensor.livebox_veip0_rate_rx", "interface_rate_rx"], ["sensor.livebox_veip0_rate_tx", "interface_rate_tx"]]), "lb");
+  assert.equal(veip.scalars.rate_up, "sensor.livebox_veip0_rate_tx");
+  // Without a WAN interface, no box.
+  assert.equal(listBoxes(mk([["sensor.livebox_fibre_debit_recu_eth1", "interface_rate_rx"]])).length, 0);
+  // The Sagemcom Livebox Fibre is drawn as a Livebox 5.
+  const { boxModel } = load("internet-box-card.js", ["boxModel"]);
+  assert.equal(boxModel(box, {}).id, "livebox_5");
+});
+
+test("Livebox 4 on fibre: found by its WAN status and restart button, rated from the Optical ONT interface (#114)", () => {
+  // A Livebox 4 behind an external ONT: no xDSL rate on its GPON line, no WAN_GPON / WAN_SFP / veip0 interface. The
+  // reporter's entities are named sensor.livebox_4_* (fiber_tx and fiber_rx are byte counters, not rates).
+  const devs = { lb: { id: "lb", name: "Livebox 4", model: "SercommVD836_Livebox4", manufacturer: "Sercomm", config_entries: ["e"] } };
+  const ent = (entity_id, translation_key) => ({ entity_id, platform: "livebox", translation_key, device_id: "lb" });
+  const mk = (ids) => {
+    const entities = {};
+    const states = {};
+    for (const [id, k] of ids) {
+      entities[id] = ent(id, k);
+      states[id] = st("on", { unit_of_measurement: "Mbit/s" });
+    }
+    return { states, entities, devices: devs };
+  };
+  const base = [
+    ["sensor.livebox_4_fiber_tx", "fiber_tx"],
+    ["sensor.livebox_4_fiber_rx", "fiber_rx"],
+    ["sensor.livebox_4_eth1_rate_rx", "interface_rate_rx"],
+    ["binary_sensor.livebox_4_wan_status", "connectivity"],
+    ["button.livebox_4_livebox_restart", "restart_btn"],
+    ["switch.livebox_4_wifi", "wifi_switch"],
+  ];
+  const hass = mk(base);
+  assert.equal(JSON.stringify(listBoxes(hass)), JSON.stringify([{ value: "lb", label: "Livebox 4" }]));
+  const box = discover(hass);
+  assert.equal(box.id, "lb");
+  assert.equal(box.operator.name, "Livebox");
+  assert.equal(box.scalars.wan, "binary_sensor.livebox_4_wan_status");
+  assert.equal(box.scalars.reboot, "button.livebox_4_livebox_restart");
+  assert.equal(box.scalars.wifi, "switch.livebox_4_wifi");
+  // Neither the byte counters nor a LAN port are taken for the rates.
+  assert.equal(box.scalars.rate_down, undefined);
+  assert.equal(box.scalars.rate_up, undefined);
+  // The fibre sensors (fiber_tx / fiber_rx byte counters) mark the line as fibre, even with no usable link_type.
+  assert.equal(box.lineType, "fibre");
+  const { boxModel } = load("internet-box-card.js", ["boxModel"]);
+  assert.equal(boxModel(box, {}).id, "livebox_4");
+  // The WAN status alone is enough to find it.
+  assert.equal(listBoxes(mk([["binary_sensor.livebox_4_wan_status", "connectivity"]])).length, 1);
+
+  // When the box names its fibre WAN interface "fiber", its rate sensors (fiber_rate_rx / _tx) give the throughput.
+  const rated = discover(mk([...base, ["sensor.livebox_4_fiber_rate_rx", "fiber_rate_rx"], ["sensor.livebox_4_fiber_rate_tx", "fiber_rate_tx"]]));
+  assert.equal(rated.scalars.rate_down, "sensor.livebox_4_fiber_rate_rx");
+  assert.equal(rated.scalars.rate_up, "sensor.livebox_4_fiber_rate_tx");
+  assert.equal(rated.lineType, "fibre");
+
+  // The external ONT interface ("Optical ONT"), in English and French entity ids, gives the rates.
+  const en = discover(mk([...base, ["sensor.livebox_4_optical_ont_rate_rx", "interface_rate_rx"], ["sensor.livebox_4_optical_ont_rate_tx", "interface_rate_tx"]]));
+  assert.equal(en.scalars.rate_down, "sensor.livebox_4_optical_ont_rate_rx");
+  assert.equal(en.scalars.rate_up, "sensor.livebox_4_optical_ont_rate_tx");
+  const fr = discover(mk([...base, ["sensor.livebox_4_debit_recu_optical_ont", "interface_rate_rx"], ["sensor.livebox_4_debit_emis_optical_ont", "interface_rate_tx"]]));
+  assert.equal(fr.scalars.rate_down, "sensor.livebox_4_debit_recu_optical_ont");
+  assert.equal(fr.scalars.rate_up, "sensor.livebox_4_debit_emis_optical_ont");
+});
+
 test("Livebox: the missed calls are counted from the call-missed sensor, never from the total of calls (#61)", () => {
   const { missedCount } = load("internet-box-card.js", ["missedCount"]);
   const s = (entity_id, state, attributes = {}) => ({ entity_id, state, attributes });
@@ -425,10 +520,13 @@ const mockCard = async (overrides, config = {}, Kind = "InternetBoxCard") => {
   const mock = await import("../scripts/mock-states.mjs");
   const { [Kind]: Card } = load("internet-box-card.js", [Kind]);
   const states = structuredClone(mock.states);
+  // Copied: tests add entities to it. Without the screenshots' Speedtest.net sensors: the tests of the speed test add theirs.
+  const entities = structuredClone(mock.entities);
+  for (const id of Object.keys(states)) if (id.startsWith("sensor.speedtest_")) delete states[id], delete entities[id];
   for (const [id, state] of Object.entries(overrides)) states[id] = { ...states[id], state, attributes: state === "unavailable" ? {} : states[id].attributes };
   const el = new Card();
   el._config = { zoom: false, ...config };
-  el._hass = { states, entities: mock.entities, devices: mock.devices, language: "en", config: { time_zone: "UTC" } };
+  el._hass = { states, entities, devices: mock.devices, language: "en", config: { time_zone: "UTC" } };
   return el;
 };
 const WIFI = "switch.freebox_wifi";
@@ -537,6 +635,9 @@ test("lineOf: the header icon follows the connection type, else the model", () =
   assert.equal(lineOf(undefined, "Livebox 7"), "box");
   assert.equal(lineOf("GPON"), "fibre");
   assert.equal(lineOf("XGS-PON"), "fibre");
+  // A WAN status that names the fibre line "ONT" or "SFP" (#114).
+  assert.equal(lineOf("ONT"), "fibre");
+  assert.equal(lineOf("SFP"), "fibre");
 });
 
 test("rate tiles: 24 h sparkline from the recorder statistics, refreshed every 5 minutes, off with show_history: false", async () => {
@@ -785,6 +886,61 @@ test("the editor offers the section order as chips to drag, all sections always 
   assert.equal(mini._form.schema.some((x) => x.name === "section_order"), false);
 });
 
+test("illustrated header: both editors offer it and its day / night theme, left out of the YAML at their defaults", () => {
+  const { InternetBoxCardEditor, InternetBoxMiniCardEditor } = load("internet-box-card.js", ["InternetBoxCardEditor", "InternetBoxMiniCardEditor"]);
+  for (const Editor of [InternetBoxCardEditor, InternetBoxMiniCardEditor]) {
+    const ed = new Editor();
+    ed.appendChild = () => {};
+    const emitted = [];
+    ed.dispatchEvent = (ev) => emitted.push(ev.detail.config);
+    ed.setConfig({ box: "router" });
+    ed.hass = { states: baseStates(), entities, devices, language: "en" };
+    assert.equal(ed._form.data.illustration, true);
+    assert.equal(ed._form.data.illustration_theme, "auto");
+    const theme = ed._form.schema.find((f) => f.name === "illustration_theme");
+    assert.equal(theme.selector.select.options.map((o) => o.label).join(" / "), "Automatic (follows the theme) / Day / Night");
+    assert.equal(ed._form.computeLabel({ name: "illustration" }), "Illustrated header (internet scene)");
+    ed._form.listeners["value-changed"]({ stopPropagation() {}, detail: { value: { ...ed._form.data } } });
+    assert.equal("illustration" in emitted.at(-1), false);
+    assert.equal("illustration_theme" in emitted.at(-1), false);
+    ed._form.listeners["value-changed"]({ stopPropagation() {}, detail: { value: { ...ed._form.data, illustration: false, illustration_theme: "night" } } });
+    assert.equal(emitted.at(-1).illustration, false);
+    assert.equal(emitted.at(-1).illustration_theme, "night");
+  }
+});
+
+test("illustrated header: the scene follows the link and the Wi-Fi, night from illustration_theme or the dark mode", () => {
+  const { sceneSvg, isNight, IMG_BOX, PIC_FIT } = load("internet-box-card.js", ["sceneSvg", "isNight", "IMG_BOX", "PIC_FIT"]);
+  // Every drawn model has its drawn part, inside its picture.
+  for (const k of Object.keys(IMG_BOX)) assert.ok(PIC_FIT[k], k);
+  const ok = sceneSvg({ state: "ok", wifi: true, pic: IMG_BOX.ultra, fit: PIC_FIT.ultra, href: "http://box", label: "Admin" });
+  assert.match(ok, /sc-fibre flow/);
+  assert.match(ok, /sc-waves on/);
+  assert.match(ok, /<a class="sc-box" href="http:\/\/box"/);
+  assert.doesNotMatch(ok, /sc-cut/);
+  // No id in the scene: several cards on a page never clash.
+  assert.doesNotMatch(ok.replace(/data:image[^"]*/g, ""), /\sid="/);
+  const down = sceneSvg({ state: "down", wifi: true, pic: null });
+  assert.match(down, /sc-cut/);
+  assert.doesNotMatch(down, /sc-waves on|sc-pk|sc-box/);
+  // Online with the Wi-Fi off: the fibre flows, the waves are off.
+  const noWifi = sceneSvg({ state: "ok", wifi: false });
+  assert.match(noWifi, /sc-fibre flow/);
+  assert.doesNotMatch(noWifi, /sc-waves on/);
+  const sun = (state) => ({ states: { "sun.sun": { state, attributes: {} } } });
+  // The theme decides: a light theme keeps the day picture after sunset.
+  assert.equal(isNight(sun("below_horizon"), {}), false);
+  assert.equal(isNight({ ...sun("below_horizon"), themes: { darkMode: true } }, {}), true);
+  assert.equal(isNight(sun("above_horizon"), { illustration_theme: "night" }), true);
+  assert.equal(isNight(sun("below_horizon"), { illustration_theme: "day" }), false);
+  assert.equal(isNight({ states: {}, themes: { darkMode: true } }, {}), true);
+  // The dark theme shows the night picture even while the sun is up; a light theme keeps the day one.
+  assert.equal(isNight({ ...sun("above_horizon"), themes: { darkMode: true } }, {}), true);
+  assert.equal(isNight({ ...sun("above_horizon"), themes: { darkMode: false } }, {}), false);
+  assert.equal(isNight({ ...sun("above_horizon"), themes: { darkMode: true } }, { illustration_theme: "day" }), false);
+  assert.equal(isNight({ states: {} }, {}), false);
+});
+
 test("sparkline: real time axis over the 24 h window, broken where the recorder has no data", () => {
   const { spark, statTime } = load("internet-box-card.js", ["spark", "statTime"]);
   const end = Date.UTC(2026, 10, 7, 12);
@@ -948,7 +1104,7 @@ test("the last Speedtest.net test is a section of its own (download and upload t
   add("sensor.speedtest_ping", "ping", "9.4", "ms");
   assert.doesNotMatch(el._network({ scalars: { router: ROUTER_ID } }), /speedtest/);
   const html = el._speedtest();
-  assert.match(html, /class="section-title">.*Speed test<span class="chip ping clickable"[^>]*data-entity="sensor\.speedtest_ping"[^>]*>.*Ping 9 ms<\/span><\/div>/);
+  assert.match(html, /class="section-title">.*Speed test(?:<button[\s\S]*?<\/button>)?<span class="chip ping clickable"[^>]*data-entity="sensor\.speedtest_ping"[^>]*>.*Ping 9 ms<\/span><\/div>/);
   assert.match(html, /<div class="grid2">.*tile down[\s\S]*tile up[\s\S]*<\/div>\s*<div class="facts"><span><svg[\s\S]*?<\/svg>[^<]*09[^<]*<\/span><\/div>/);
   assert.match(html, /tile down clickable[^>]*data-entity="sensor\.speedtest_download"[\s\S]*?<div class="v">106 MB\/s<\/div>/);
   assert.match(html, /tile up clickable[^>]*data-entity="sensor\.speedtest_upload"[\s\S]*?<div class="v">64\.0 MB\/s<\/div>/);
@@ -956,7 +1112,162 @@ test("the last Speedtest.net test is a section of its own (download and upload t
   el._config = { ...el._config, rate_unit: "bits" };
   assert.match(el._speedtest(), /845 Mb\/s/);
   el._config = { ...el._config, show_speedtest: false };
-  assert.doesNotMatch(el._render(), /speedtest/);
+  assert.doesNotMatch(el._render(), /data-entity="sensor\.speedtest_|class="section-title">[^<]*Speed test/);
+});
+
+test("another speed test (LibreSpeed…) through entities.speedtest: its sensors only, not mixed with Speedtest.net's; Fast.com found", async () => {
+  const el = await mockCard({});
+  const add = (id, platform, key, state, unit) => {
+    if (platform) el._hass.entities[id] = { entity_id: id, platform, translation_key: key };
+    el._hass.states[id] = { entity_id: id, state, attributes: { unit_of_measurement: unit }, last_changed: "2026-11-09T06:00:00Z" };
+  };
+  add("sensor.fast_com_download", "fastdotcom", "download", "400", "Mbit/s");
+  let html = el._speedtest();
+  assert.match(html, /data-entity="sensor\.fast_com_download"/);
+  assert.match(html, /<div class="v">50\.0 MB\/s<\/div>/);
+  add("sensor.speedtest_upload", "speedtestdotnet", "upload", "512", "Mbit/s");
+  add("sensor.librespeed_download", null, null, "800", "Mbit/s");
+  add("sensor.librespeed_ping", null, null, "12", "ms");
+  el._config = { ...el._config, entities: { speedtest: { download: "sensor.librespeed_download", ping: "sensor.librespeed_ping" } } };
+  html = el._speedtest();
+  assert.match(html, /data-entity="sensor\.librespeed_download"/);
+  assert.match(html, /tile down[\s\S]*?<div class="v">100 MB\/s<\/div>/);
+  assert.match(html, /Ping 12 ms/);
+  assert.doesNotMatch(html, /tile up/);
+});
+
+test("speed test button (#107): refreshes Speedtest.net, presses the entity of entities.speedtest.run, turns until new results", async () => {
+  const el = await mockCard({});
+  const calls = [];
+  el._hass.callService = (...c) => calls.push(c);
+  el._update = () => {};
+  const add = (id, platform, key, state) => {
+    if (platform) el._hass.entities[id] = { entity_id: id, platform, translation_key: key };
+    el._hass.states[id] = { entity_id: id, state, attributes: { unit_of_measurement: "Mbit/s" }, last_updated: "2026-11-09T06:00:00Z", last_reported: "2026-11-09T06:00:00Z" };
+  };
+  add("sensor.speedtest_download", "speedtestdotnet", "download", "845");
+  const net = () => el._speedtest();
+  let html = net();
+  assert.match(html, /<button type="button" class="run" data-action="speedtest" title="Run a speed test" aria-label="Run a speed test">/);
+  // Not inside an element opening the more-info dialog
+  assert.doesNotMatch(html, /role="button"[^>]*>(?:(?!<\/span>).)*<button/);
+  el._runSpeedtest();
+  await new Promise((r) => setTimeout(r));
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [["homeassistant", "update_entity", { entity_id: "sensor.speedtest_download" }]]);
+  html = net();
+  assert.match(html, /class="run" data-action="speedtest" title="Speed test running…" aria-label="Speed test running…" aria-busy="true" aria-disabled="true"><svg class="icon spin"/);
+  el._runSpeedtest();
+  await new Promise((r) => setTimeout(r));
+  assert.equal(calls.length, 1, "no second test while one runs");
+  // New results: stopped
+  el._hass.states["sensor.speedtest_download"] = { ...el._hass.states["sensor.speedtest_download"], last_reported: "2026-11-12T22:00:00Z" };
+  assert.doesNotMatch(net(), /aria-busy/);
+  // Time is up without results: stopped too
+  el._runSpeedtest();
+  [...el.constructor.speedtestRuns.values()][0].at -= 181e3;
+  assert.doesNotMatch(net(), /aria-busy/);
+  clearTimeout(el._speedtestTimer);
+  await new Promise((r) => setTimeout(r));
+  assert.equal(calls.length, 2);
+
+  // A failed call: stopped at once
+  el._hass.callService = () => Promise.reject(new Error("forbidden"));
+  el._runSpeedtest();
+  assert.match(net(), /aria-busy/);
+  await new Promise((r) => setTimeout(r));
+  assert.equal(el.constructor.speedtestRuns.size, 0);
+  assert.doesNotMatch(net(), /aria-busy/);
+  clearTimeout(el._speedtestTimer);
+  el._hass.callService = (...c) => calls.push(c);
+
+  // Sensors of another speed test: a button only with entities.speedtest.run, pressed (a script is run)
+  add("sensor.librespeed_download", null, null, "800");
+  el._config = { ...el._config, entities: { speedtest: { download: "sensor.librespeed_download" } } };
+  assert.doesNotMatch(net(), /data-action="speedtest"/);
+  for (const [run, svc] of [
+    ["button.librespeed_run", ["button", "press"]],
+    ["input_button.speedtest", ["input_button", "press"]],
+    ["script.speedtest", ["script", "turn_on"]],
+    ["automation.speedtest", ["automation", "trigger"]],
+  ]) {
+    el._hass.states[run] = { entity_id: run, state: "unknown", attributes: {} };
+    el._config = { ...el._config, entities: { speedtest: { download: "sensor.librespeed_download", run } } };
+    el.constructor.speedtestRuns.clear();
+    calls.length = 0;
+    assert.match(net(), /data-action="speedtest"/);
+    el._runSpeedtest();
+    await new Promise((r) => setTimeout(r));
+    assert.deepEqual(JSON.parse(JSON.stringify(calls)), [[...svc, { entity_id: run }]], run);
+    clearTimeout(el._speedtestTimer);
+  }
+  el._hass.states["script.speedtest"].state = "unavailable";
+  el._config = { ...el._config, entities: { speedtest: { download: "sensor.librespeed_download", run: "script.speedtest" } } };
+  assert.doesNotMatch(net(), /data-action="speedtest"/);
+});
+
+test("speed test button: another speed test runs until its values change, not on a poll writing the same ones; shared by the cards", async () => {
+  const el = await mockCard({});
+  el._hass.callService = async () => {};
+  el._update = () => {};
+  const id = "sensor.librespeed_download";
+  el._hass.states[id] = { entity_id: id, state: "800", attributes: { unit_of_measurement: "Mbit/s" }, last_updated: "2026-11-09T06:00:00Z", last_reported: "2026-11-09T06:00:00Z" };
+  el._hass.states["button.librespeed_run"] = { entity_id: "button.librespeed_run", state: "unknown", attributes: {} };
+  el._config = { ...el._config, entities: { speedtest: { download: id, run: "button.librespeed_run" } } };
+  const running = () => /aria-busy/.test(el._speedtest());
+  el._runSpeedtest();
+  el._hass.states[id] = { ...el._hass.states[id], last_reported: "2026-11-12T22:00:00Z" };
+  assert.ok(running(), "a poll with the same values");
+  // Another card of the page (same entity starting the test) shows it running too
+  const other = Object.create(Object.getPrototypeOf(el));
+  Object.assign(other, { _hass: el._hass, _config: el._config });
+  assert.ok(/aria-busy/.test(other._speedtest()));
+  el._hass.states[id] = { ...el._hass.states[id], state: "812", last_updated: "2026-11-12T22:01:00Z" };
+  assert.ok(!running(), "new results");
+  clearTimeout(el._speedtestTimer);
+});
+
+test("speed test button: in every language, and in the editor's speed test fold", () => {
+  const { STRINGS, InternetBoxCardEditor } = load("internet-box-card.js", ["STRINGS", "InternetBoxCardEditor"]);
+  for (const [code, s] of Object.entries(STRINGS)) for (const k of ["ent_run", "run_speedtest", "speedtest_running"]) assert.ok(s[k], `${code} ${k}`);
+  const ed = new InternetBoxCardEditor();
+  ed.appendChild = () => {};
+  ed.setConfig({ box: "router" });
+  ed.hass = { states: baseStates(), entities, devices, language: "en" };
+  const fold = ed._form.schema.find((f) => f.name === "entities").schema.find((f) => f.name === "speedtest");
+  assert.ok(fold.schema.some((f) => f.name === "run"));
+  assert.equal(ed._form.computeLabel({ name: "run" }), "Speed test: button to run it");
+});
+
+test("entities: the box's sensors of the user's choice replace the ones found, the same object while nothing changes", () => {
+  const lib = load("internet-box-card.js", ["boxFor", "discover"]);
+  const hass = { states: { ...baseStates(), "sensor.wan_in": { entity_id: "sensor.wan_in", ...st("2000", { unit_of_measurement: "kB/s" }) } }, entities, devices, language: "en" };
+  const config = { box: "router", entities: { rate_down: "sensor.wan_in", wifi: "not an id" } };
+  const found = lib.discover(hass, "router");
+  const own = lib.boxFor(hass, config);
+  assert.equal(found.scalars.rate_down, "sensor.down");
+  assert.equal(own.scalars.rate_down, "sensor.wan_in");
+  assert.equal(own.scalars.wifi, found.scalars.wifi);
+  assert.equal(lib.boxFor(hass, { ...config }), own);
+  assert.equal(lib.boxFor(hass, { box: "router" }), found);
+});
+
+test("editor: the box rates and a speed test chosen under entities, emptied ones dropped", () => {
+  const { InternetBoxCardEditor } = load("internet-box-card.js", ["InternetBoxCardEditor"]);
+  const hass = { states: baseStates(), entities, devices, language: "en" };
+  const ed = new InternetBoxCardEditor();
+  ed.appendChild = () => {};
+  const emitted = [];
+  ed.dispatchEvent = (ev) => emitted.push(ev.detail.config);
+  ed.setConfig({ box: "router" });
+  ed.hass = hass;
+  const fold = ed._form.schema.find((f) => f.name === "entities");
+  assert.equal(fold.type, "expandable");
+  assert.equal(ed._form.computeLabel({ name: "download" }), "Speed test: download");
+  const change = (value) => ed._form.listeners["value-changed"]({ stopPropagation() {}, detail: { value } });
+  change({ ...ed._config, entities: { rate_down: "", speedtest: { download: "sensor.librespeed_download", upload: "" } } });
+  assert.deepEqual(JSON.parse(JSON.stringify(emitted.at(-1).entities)), { speedtest: { download: "sensor.librespeed_download" } });
+  change({ ...ed._config, entities: { speedtest: { download: "" } } });
+  assert.equal("entities" in emitted.at(-1), false);
 });
 
 // A device of another integration linked to the router (FRITZ!Box Tools links network clients, a NAS merged by its
@@ -973,4 +1284,43 @@ test("a device of another config entry linked to the router is not a child of th
   const box = discover(hass, router);
   assert.ok(box.partitions.length >= 1, "the box disk partition is still found");
   assert.ok(!box.partitions.some((p) => p.id === id));
+});
+
+test("a Freebox whose entities have no translation key is found by entity-id suffix (#112)", () => {
+  const devs = {
+    fbx: { id: "fbx", name: "Freebox v7 (r1)", model: "Freebox v7 (r1)", model_id: "fbxgw7-r1/full", config_entries: ["e"] },
+    disk: { id: "disk", name: "Disk 1", via_device_id: "fbx", config_entries: ["e"] },
+  };
+  const ids = {
+    "sensor.freebox_download_speed": ["fbx", { device_class: "data_rate" }],
+    "sensor.freebox_upload_speed": ["fbx", { device_class: "data_rate" }],
+    "sensor.freebox_missed_calls": ["fbx", {}],
+    "sensor.freebox_temperature_cpu_ap": ["fbx", { device_class: "temperature" }],
+    "sensor.freebox_disque_dur_1": ["disk", {}],
+    "sensor.disque_dur_free_space": ["disk", {}],
+    "binary_sensor.raid_array_0_degraded": ["disk", {}],
+    "device_tracker.freebox_v7_r1": ["fbx", {}],
+    "switch.freebox_wifi": ["fbx", {}],
+    "button.mark_calls_as_read": ["fbx", {}],
+    "button.reboot_freebox": ["fbx", { device_class: "restart" }],
+  };
+  const ents = {};
+  const states = {};
+  for (const [id, [device_id, attributes]] of Object.entries(ids)) {
+    ents[id] = { entity_id: id, platform: "freebox", device_id };
+    states[id] = { entity_id: id, state: "1", attributes };
+  }
+  const hass = { states, entities: ents, devices: devs };
+  assert.deepEqual([...listBoxes(hass)].map((b) => b.value), ["fbx"]);
+  const box = discover(hass, undefined);
+  assert.equal(box.scalars.rate_down, "sensor.freebox_download_speed");
+  assert.equal(box.scalars.rate_up, "sensor.freebox_upload_speed");
+  assert.equal(box.scalars.missed, "sensor.freebox_missed_calls");
+  assert.equal(box.scalars.wifi, "switch.freebox_wifi");
+  assert.equal(box.scalars.mark_read, "button.mark_calls_as_read");
+  assert.equal(box.scalars.reboot, "button.reboot_freebox");
+  assert.equal(box.scalars.router, "device_tracker.freebox_v7_r1");
+  assert.deepEqual([...box.partitions].map((p) => p.id), ["sensor.disque_dur_free_space"]);
+  assert.deepEqual([...box.raids], ["binary_sensor.raid_array_0_degraded"]);
+  assert.deepEqual([...box.temps].map((t) => t.id), ["sensor.freebox_temperature_cpu_ap"]);
 });

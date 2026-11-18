@@ -36,8 +36,19 @@ const open = async (config = {}) => {
       el.hass = { states, entities, devices, language: "en", config: { time_zone: "UTC" } };
       document.getElementById("root").appendChild(el);
       window.card = el;
-      window.click = (node, detail = 1) =>
+      // A mouse click is a press, a release and the click (detail 1); a keyboard click is the click alone (detail 0).
+      window.click = (node, detail = 1) => {
+        if (detail) {
+          node.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, composed: true }));
+          node.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, composed: true }));
+        }
         node.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true, detail }));
+      };
+      // A tap that sends no click (iOS, on something that is not clickable): the press and the release only.
+      window.tap = (down, up = down) => {
+        down.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, composed: true }));
+        up.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, composed: true }));
+      };
       window.view = () => {
         const root = el.shadowRoot;
         const zoom = root.querySelector(".zoom");
@@ -46,7 +57,8 @@ const open = async (config = {}) => {
           mini: !!root.querySelector(".foot"),
           icon: zoom?.querySelector("path")?.getAttribute("d").slice(0, 12) ?? null,
           title: zoom?.title ?? null,
-          last: zoom ? zoom === root.querySelector(".header").lastElementChild : null,
+          // The last header button (top right): in the banner's button group, or in the classic header's row.
+          last: zoom ? root.querySelector(".header").contains(zoom) && !zoom.nextElementSibling : null,
           size: el.getCardSize(),
           columns: el.getGridOptions().columns,
           focused: !!zoom && root.activeElement === zoom,
@@ -88,7 +100,7 @@ test("the detail button shows the full card and goes back to the mini card", asy
     focused: false,
   });
   // Everything the full card shows.
-  assert.deepEqual(res.sections, ["Network", "System", "Storage", "Services"]);
+  assert.deepEqual(res.sections, ["Network", "Speed testPing 9 ms", "System", "Storage", "Services"]);
   assert.ok(res.gauges > 0);
   assert.deepEqual(res.back, mini);
   assert.equal(res.bubbled, 0, "the button click must not propagate");
@@ -118,15 +130,21 @@ test("a click outside folds the card back, a click inside it or in a dialog does
     const inside = window.view().full;
     window.click(document.querySelector("dialog b"));
     const dialog = window.view().full;
-    window.click(document.getElementById("outside"));
+    // Pressed in the card (a slider) and released outside: it stays.
+    window.tap(root.querySelector(".section-title"), document.getElementById("outside"));
+    const dragged = window.view().full;
+    // A tap that sends no click (iOS): the press and the release fold it.
+    window.tap(document.getElementById("outside"));
     const outside = window.view().full;
-    // Removed from the page: no more listener.
+    // Removed from the page (another view, a hidden conditional card): back to the compact view, no more listener.
     window.click(root.querySelector(".zoom"));
     window.card.remove();
-    window.click(document.getElementById("outside"));
-    return { inside, dialog, outside, detached: window.card._zoomed };
+    const detached = window.card._zoomed;
+    window.card._zoomed = true;
+    window.tap(document.getElementById("outside"));
+    return { inside, dialog, dragged, outside, detached, listening: !window.card._zoomed };
   });
-  assert.deepEqual(res, { inside: true, dialog: true, outside: false, detached: true });
+  assert.deepEqual(res, { inside: true, dialog: true, dragged: true, outside: false, detached: false, listening: false });
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -141,24 +159,85 @@ test("zoom: false removes the detail button", async (t) => {
   await page.close();
 });
 
-test("the status pill sits right of the title, centred on its line, and the Wi-Fi state is not duplicated under it (the Services section shows it)", async (t) => {
+test("classic header: the status pill sits right after the title, centred on its line, and the Wi-Fi state is not duplicated under it (the Services section shows it)", async (t) => {
   if (skip) return t.skip(skip);
-  const { page, errors } = await open();
+  const { page, errors } = await open({ illustration: false });
   const res = await page.evaluate(() => {
     const root = window.card.shadowRoot;
     window.click(root.querySelector(".zoom"));
     const header = root.querySelector(".header");
-    const status = root.querySelector(".titles > .chip.status");
+    const status = root.querySelector(".titles .trow > .chip.status");
     const centre = (n) => n.getBoundingClientRect().top + n.getBoundingClientRect().height / 2;
     return {
       row: [...header.children].map((n) => n.className.split(" ")[0]),
       status: status.textContent,
       dy: Math.abs(centre(status) - centre(root.querySelector(".name"))) <= 1,
-      right: status.getBoundingClientRect().left > root.querySelector(".sub").getBoundingClientRect().right,
+      // Right after the whole title (4 to 12 px gap), not at the far right of the title block.
+      after: (() => {
+        const gap = status.getBoundingClientRect().left - root.querySelector(".name").getBoundingClientRect().right;
+        return gap >= 4 && gap <= 12;
+      })(),
       under: [...root.querySelectorAll(".titles .chips .chip")].map((n) => n.textContent),
     };
   });
-  assert.deepEqual(res, { row: ["logo-link", "titles", "box-link", "action", "zoom"], status: "Online · FTTH", dy: true, right: true, under: [] });
+  assert.deepEqual(res, { row: ["logo-link", "titles", "box-link", "action", "zoom"], status: "Online · FTTH", dy: true, after: true, under: [] });
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("illustrated header: a 90 px banner with its scene, the box on a 10 px network strip, the status pill by the title", async (t) => {
+  if (skip) return t.skip(skip);
+  const { page, errors } = await open();
+  const measureBanner = () =>
+    page.evaluate(() => {
+      const root = window.card.shadowRoot;
+      const r = (sel) => root.querySelector(sel)?.getBoundingClientRect();
+      const card = r("ha-card");
+      const banner = r(".banner");
+      const ground = r(".banner .ground");
+      const box = r(".scene .sc-box");
+      return {
+        height: banner.height,
+        ground: [ground.height, ground.left === card.left, ground.right === card.right, ground.bottom === banner.bottom],
+        // The box stands on the strip, inside the banner.
+        onGround: Math.abs(box.bottom - ground.top) <= 2 && box.top >= banner.top,
+        // The pill on the title's row (centred on it, after it), or on a line of its own under the subtitle.
+        statusPlaced: (() => {
+          const pill = r(".banner .chip.status");
+          const name = r(".name");
+          const sub = r(".banner .sub") || name;
+          const onRow = Math.abs(pill.top + pill.height / 2 - (name.top + name.height / 2)) <= 2 && pill.left >= name.right;
+          return onRow || pill.top >= sub.bottom - 1;
+        })(),
+        night: root.querySelector(".banner").classList.contains("night"),
+        strip: root.querySelector(".banner .ground").className,
+        zoomClear: r(".zoom").left >= r(".name").right,
+      };
+    });
+  const day = await measureBanner();
+  assert.deepEqual(day, { height: 90, ground: [10, true, true, true], onGround: true, statusPlaced: true, night: false, strip: "ground g-net", zoomClear: true });
+  // Night: a dark theme, or `illustration_theme` forcing it; the mini card's full view keeps the banner.
+  const night = await page.evaluate(() => {
+    const el = window.card;
+    el.hass = { ...el.hass, themes: { ...el.hass.themes, darkMode: true } };
+    const dark = el.shadowRoot.querySelector(".banner").classList.contains("night");
+    el.setConfig({ type: "custom:internet-box-mini-card", illustration_theme: "day" });
+    const forced = el.shadowRoot.querySelector(".banner").classList.contains("night");
+    window.click(el.shadowRoot.querySelector(".zoom"));
+    return { dark, forced, zoomed: el.shadowRoot.querySelectorAll(".banner").length };
+  });
+  assert.deepEqual(night, { dark: true, forced: false, zoomed: 1 });
+  // Offline: the broken fibre and the red network strip; `illustration: false` brings the classic header back.
+  const offline = await page.evaluate(() => {
+    const el = window.card;
+    const id = "device_tracker.freebox_v9_r1";
+    el.hass = { ...el.hass, states: { ...el.hass.states, [id]: { ...el.hass.states[id], state: "not_home" } } };
+    const root = el.shadowRoot;
+    const res = { strip: root.querySelector(".banner .ground").className, cut: !!root.querySelector(".sc-cut"), icon: root.querySelector(".logo-link").classList.contains("crit") };
+    el.setConfig({ type: "custom:internet-box-mini-card", illustration: false });
+    return { ...res, classic: !root.querySelector(".banner") && !!root.querySelector(".header .box") };
+  });
+  assert.deepEqual(offline, { strip: "ground g-netdown", cut: true, icon: true, classic: true });
   assert.deepEqual(errors, []);
   await page.close();
 });
