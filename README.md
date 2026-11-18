@@ -11,6 +11,13 @@ It is a fork of [ha-internet-box-card](https://github.com/juju35/ha-internet-box
 > [!WARNING]
 > This is a hobby project, maintained in spare time for personal use. It comes without any warranty or support: **use it at your own risk**.
 
+| Light | Dark |
+|---|---|
+| <img src="screenshots/unifi-card.png" alt="UniFi Box Card" width="420"> | <img src="screenshots/unifi-card-dark.png" alt="UniFi Box Card, dark theme" width="420"> |
+| <img src="screenshots/unifi-mini-card.png" alt="UniFi Box Mini Card" width="360"> | <img src="screenshots/unifi-mini-card-dark.png" alt="UniFi Box Mini Card, dark theme" width="360"> |
+
+Screenshots with mock data, rendered by `npm run build && npm run screenshots:unifi`.
+
 ## What it shows
 
 | Shown | From |

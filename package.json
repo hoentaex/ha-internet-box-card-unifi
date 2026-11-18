@@ -8,6 +8,7 @@
     "build": "node scripts/build.mjs",
     "check": "node scripts/build.mjs && node --check dist/internet-box-card.js",
     "screenshots": "node scripts/screenshots.mjs",
+    "screenshots:unifi": "node scripts/screenshots-unifi.mjs",
     "test": "node --test test/*.test.mjs"
   },
   "license": "MIT",
