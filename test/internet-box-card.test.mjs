@@ -1024,8 +1024,9 @@ test("the network section keeps the IP address and uptime when the box has no ra
   const html = el._network({ scalars: { router: ROUTER_ID } });
   assert.match(html, /class="section-title"/);
   assert.match(html, /203\.0\.113\.7/);
-  // KPI tiles (UniFi fork): the uptime and the IP as tiles of their own, no rate tile.
-  assert.match(html, /<span class="kk">Uptime<\/span>/);
+  // KPI tiles (UniFi fork): the IP as a tile of its own, the uptime a small line under the tiles, no rate tile.
+  assert.match(html, /<div class="facts"><span class="clickable"[^>]*>[\s\S]*?Uptime /);
+  assert.doesNotMatch(html, /<span class="kk">Uptime<\/span>/);
   assert.match(html, /<span class="kk">IP<\/span>\s*<span class="kv">203\.0\.113\.7<\/span>/);
   assert.doesNotMatch(html, /class="grid2"|class="tile|data-key="down"/);
   // Neither rates nor facts: no section.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.6.1-unifi.3 - 2026-11-20
+
+### Fixes
+- The uptime is no KPI tile any more: it is a small line under the network tiles again, as before 3.6.1-unifi.2 (a click opens its sensor).
+
 ## 3.6.1-unifi.2 - 2026-11-20
 
 ### Features

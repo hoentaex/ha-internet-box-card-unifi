@@ -4978,7 +4978,7 @@ class InternetBoxCard extends InternetBoxBase {
     const sync = !(sc.rate_down || sc.rate_up);
     const k = this._t("line_rate");
     // Download and upload (a box without throughput sensors: the DSL sync rates, without curve), the WAN latencies
-    // with their last 24 hours, the uptime and the public IP, all as KPI tiles; a missing one leaves no gap.
+    // with their last 24 hours and the public IP as KPI tiles; a missing one leaves no gap.
     const tiles = kpiGrid([
       sync
         ? rate(sc.sync_down, "down", ICONS.down, `${k} ↓`, "var(--ibc-ok)", false)
@@ -5000,20 +5000,20 @@ class InternetBoxCard extends InternetBoxBase {
           spark: spark(hist?.[id], hist?.end),
         };
       }),
-      up !== null && {
-        key: "uptime",
-        k: this._t("uptime"),
-        v: fmtUptime(up, this._hass, this._config),
-        icon: ICONS.timer,
-        c: "var(--ibc-ok)",
-        entity: this._uptimeEntity(router, box),
-      },
       ip && { key: "ip", k: "IP", v: ip.v4, s: ip.v6 || "", icon: ICONS.ip, c: "var(--info-color, #039be5)", entity: ip.entity },
     ]);
-    if (!tiles) return "";
+    // The uptime stays a small line under the tiles, as before the tiles.
+    const fact =
+      up !== null
+        ? `<div class="facts"><span class="clickable" role="button" tabindex="0" data-entity="${this._uptimeEntity(router, box)}">${svgIcon(ICONS.timer)}${this._t(
+            "uptime"
+          )} ${fmtUptime(up, this._hass, this._config)}</span></div>`
+        : "";
+    if (!tiles && !fact) return "";
     return `<div>
       <div class="section-title">${svgIcon(ICONS.network)}${this._t("network")}</div>
       ${tiles}
+      ${fact}
     </div>`;
   }
 
