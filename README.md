@@ -4,7 +4,7 @@
 [![Validate](https://github.com/hoentaex/ha-internet-box-card-unifi/actions/workflows/validate.yml/badge.svg)](https://github.com/hoentaex/ha-internet-box-card-unifi/actions/workflows/validate.yml)
 [![Release](https://img.shields.io/github/v/release/hoentaex/ha-internet-box-card-unifi)](https://github.com/hoentaex/ha-internet-box-card-unifi/releases/latest)
 
-A Home Assistant dashboard card for the gateway of a **UniFi Network**: Dream Machine, Cloud Gateway, Dream Router, Next-Gen / Security Gateway, Express. It shows the connection status, WAN throughput and latency, the last speed test, CPU, RAM and temperature, and the connected devices, with a restart button.
+A Home Assistant dashboard card for the gateway of a **UniFi Network**: Dream Machine, Cloud Gateway, Dream Router, Next-Gen / Security Gateway, Express. It shows the connection status, WAN throughput and latency, uptime and public IP as KPI tiles with their last 24 hours, the last speed test, CPU, RAM and temperature, and the connected devices, with a restart button. A figure without a sensor leaves its tile out; the tiles close up without a gap.
 
 It is a fork of [ha-internet-box-card](https://github.com/juju35/ha-internet-box-card) by juju35, which covers the internet boxes of many operators (Freebox, Livebox, FRITZ!Box, Vodafone Station, Starlink…); see the original project for those. The cards of this fork are registered as `custom:unifi-box-card` and `custom:unifi-box-mini-card`, so they can be installed next to the original card.
 

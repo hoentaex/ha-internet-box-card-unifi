@@ -1024,8 +1024,10 @@ test("the network section keeps the IP address and uptime when the box has no ra
   const html = el._network({ scalars: { router: ROUTER_ID } });
   assert.match(html, /class="section-title"/);
   assert.match(html, /203\.0\.113\.7/);
-  assert.match(html, /Uptime /);
-  assert.doesNotMatch(html, /class="grid2"|class="tile/);
+  // KPI tiles (UniFi fork): the uptime and the IP as tiles of their own, no rate tile.
+  assert.match(html, /<span class="kk">Uptime<\/span>/);
+  assert.match(html, /<span class="kk">IP<\/span>\s*<span class="kv">203\.0\.113\.7<\/span>/);
+  assert.doesNotMatch(html, /class="grid2"|class="tile|data-key="down"/);
   // Neither rates nor facts: no section.
   el._hass.states[ROUTER_ID] = { ...router, attributes: {} };
   assert.equal(el._network({ scalars: { router: ROUTER_ID } }), "");
@@ -1105,12 +1107,12 @@ test("the last Speedtest.net test is a section of its own (download and upload t
   assert.doesNotMatch(el._network({ scalars: { router: ROUTER_ID } }), /speedtest/);
   const html = el._speedtest();
   assert.match(html, /class="section-title">.*Speed test(?:<button[\s\S]*?<\/button>)?<span class="chip ping clickable"[^>]*data-entity="sensor\.speedtest_ping"[^>]*>.*Ping 9 ms<\/span><\/div>/);
-  assert.match(html, /<div class="grid2">.*tile down[\s\S]*tile up[\s\S]*<\/div>\s*<div class="facts"><span><svg[\s\S]*?<\/svg>[^<]*09[^<]*<\/span><\/div>/);
-  assert.match(html, /tile down clickable[^>]*data-entity="sensor\.speedtest_download"[\s\S]*?<div class="v">106 MB\/s<\/div>/);
-  assert.match(html, /tile up clickable[^>]*data-entity="sensor\.speedtest_upload"[\s\S]*?<div class="v">64\.0 MB\/s<\/div>/);
+  assert.match(html, /<div class="kpis">[\s\S]*sensor\.speedtest_download[\s\S]*sensor\.speedtest_upload[\s\S]*<\/div>\s*<div class="facts"><span><svg[\s\S]*?<\/svg>[^<]*09[^<]*<\/span><\/div>/);
+  assert.match(html, /kpi clickable"[^>]*data-entity="sensor\.speedtest_download"[\s\S]*?<span class="kv">106<small>MB\/s<\/small><\/span>/);
+  assert.match(html, /kpi clickable"[^>]*data-entity="sensor\.speedtest_upload"[\s\S]*?<span class="kv">64\.0<small>MB\/s<\/small><\/span>/);
   assert.doesNotMatch(html, /tile lat/);
   el._config = { ...el._config, rate_unit: "bits" };
-  assert.match(el._speedtest(), /845 Mb\/s/);
+  assert.match(el._speedtest(), /845<small>Mb\/s<\/small>/);
   el._config = { ...el._config, show_speedtest: false };
   assert.doesNotMatch(el._render(), /data-entity="sensor\.speedtest_|class="section-title">[^<]*Speed test/);
 });
@@ -1124,16 +1126,16 @@ test("another speed test (LibreSpeed…) through entities.speedtest: its sensors
   add("sensor.fast_com_download", "fastdotcom", "download", "400", "Mbit/s");
   let html = el._speedtest();
   assert.match(html, /data-entity="sensor\.fast_com_download"/);
-  assert.match(html, /<div class="v">50\.0 MB\/s<\/div>/);
+  assert.match(html, /<span class="kv">50\.0<small>MB\/s<\/small><\/span>/);
   add("sensor.speedtest_upload", "speedtestdotnet", "upload", "512", "Mbit/s");
   add("sensor.librespeed_download", null, null, "800", "Mbit/s");
   add("sensor.librespeed_ping", null, null, "12", "ms");
   el._config = { ...el._config, entities: { speedtest: { download: "sensor.librespeed_download", ping: "sensor.librespeed_ping" } } };
   html = el._speedtest();
   assert.match(html, /data-entity="sensor\.librespeed_download"/);
-  assert.match(html, /tile down[\s\S]*?<div class="v">100 MB\/s<\/div>/);
+  assert.match(html, /data-entity="sensor\.librespeed_download"[\s\S]*?<span class="kv">100<small>MB\/s<\/small><\/span>/);
   assert.match(html, /Ping 12 ms/);
-  assert.doesNotMatch(html, /tile up/);
+  assert.doesNotMatch(html, /speedtest_upload/);
 });
 
 test("speed test button (#107): refreshes Speedtest.net, presses the entity of entities.speedtest.run, turns until new results", async () => {

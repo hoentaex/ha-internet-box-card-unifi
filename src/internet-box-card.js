@@ -4930,7 +4930,7 @@ class InternetBoxCard extends InternetBoxBase {
       .map((name) => render[name]());
     // With the illustrated banner, the header chips open the content.
     if (c.illustration !== false) parts.unshift(this._chips(box));
-    return `<style>${BASE_STYLE}${FULL_STYLE}${c.illustration !== false ? BANNER_STYLE : ""}</style>
+    return `<style>${BASE_STYLE}${FULL_STYLE}${KPI_STYLE}${c.illustration !== false ? BANNER_STYLE : ""}</style>
       <ha-card style="--ibc-red:${brandOf(box, this._config).color}">
         ${this._header(box, true)}
         <div class="content">${parts.filter(Boolean).join("")}</div>
@@ -4960,9 +4960,7 @@ class InternetBoxCard extends InternetBoxBase {
 
   _network(box, hist = null) {
     const sc = box.scalars;
-    const rates = sc.rate_down || sc.rate_up || sc.sync_down || sc.sync_up;
     const router = this._s(sc.router);
-    const facts = [];
     // Public IP: the router tracker's attributes (Freebox), else the integration's external IP sensors.
     const ip4 = this._s(sc.ip);
     const ip6 = this._s(sc.ip6);
@@ -4971,33 +4969,51 @@ class InternetBoxCard extends InternetBoxBase {
       : ip4 && !noValue(ip4)
         ? { entity: ip4.entity_id, v4: ip4.state, v6: ip6 && !noValue(ip6) ? ip6.state : "" }
         : null;
-    if (ip)
-      facts.push(
-        `<span class="clickable" role="button" tabindex="0" data-entity="${ip.entity}" title="${esc(ip.v6 || "")}">${svgIcon(ICONS.ip)}${esc(ip.v4)}</span>`
-      );
     const up = this._uptime(router, box);
-    if (up !== null)
-      facts.push(
-        `<span class="clickable" role="button" tabindex="0" data-entity="${this._uptimeEntity(router, box)}">${svgIcon(ICONS.timer)}${this._t("uptime")} ${fmtUptime(
-          up,
-          this._hass,
-          this._config
-        )}</span>`
-      );
-    // WAN latency tiles (UniFi gateway), each with its last 24 hours.
-    const lat = this._latencies(box).map(({ id, name, label }) => {
-      const v = num(this._s(id));
-      return `<div class="tile lat clickable" role="button" tabindex="0" data-key="${id}" data-entity="${id}">${spark(hist?.[id], hist?.end)}${svgIcon(
-        ICONS.timer
-      )}<div><div class="k" title="${esc(name)}">${esc(label)}</div><div class="v">${v === null ? "—" : `${Math.round(v)} ms`}</div></div></div>`;
-    });
-    // Without any rate or sync sensor, the IP address and the uptime are still shown.
-    if (!rates && !facts.length && !lat.length) return "";
+    const rate = (id, key, icon, k, c, withCurve) => {
+      if (!id) return null;
+      const [v, u] = splitUnit(this._rate(id));
+      return { key, k, v, u, icon, c, entity: id, spark: withCurve ? spark(hist?.[id], hist?.end) : "" };
+    };
+    const sync = !(sc.rate_down || sc.rate_up);
+    const k = this._t("line_rate");
+    // Download and upload (a box without throughput sensors: the DSL sync rates, without curve), the WAN latencies
+    // with their last 24 hours, the uptime and the public IP, all as KPI tiles; a missing one leaves no gap.
+    const tiles = kpiGrid([
+      sync
+        ? rate(sc.sync_down, "down", ICONS.down, `${k} ↓`, "var(--ibc-ok)", false)
+        : rate(sc.rate_down, "down", ICONS.down, this._t("download"), "var(--ibc-ok)", true),
+      sync
+        ? rate(sc.sync_up, "up", ICONS.up, `${k} ↑`, "var(--info-color, #039be5)", false)
+        : rate(sc.rate_up, "up", ICONS.up, this._t("upload"), "var(--info-color, #039be5)", true),
+      ...this._latencies(box).map(({ id, name, label }) => {
+        const v = num(this._s(id));
+        return {
+          key: id,
+          k: label,
+          title: name,
+          v: v === null ? null : String(Math.round(v)),
+          u: "ms",
+          icon: ICONS.timer,
+          c: "var(--ibc-ok)",
+          entity: id,
+          spark: spark(hist?.[id], hist?.end),
+        };
+      }),
+      up !== null && {
+        key: "uptime",
+        k: this._t("uptime"),
+        v: fmtUptime(up, this._hass, this._config),
+        icon: ICONS.timer,
+        c: "var(--ibc-ok)",
+        entity: this._uptimeEntity(router, box),
+      },
+      ip && { key: "ip", k: "IP", v: ip.v4, s: ip.v6 || "", icon: ICONS.ip, c: "var(--info-color, #039be5)", entity: ip.entity },
+    ]);
+    if (!tiles) return "";
     return `<div>
       <div class="section-title">${svgIcon(ICONS.network)}${this._t("network")}</div>
-      ${rates ? `<div class="grid2">${this._rateTiles(sc, hist)}</div>` : ""}
-      ${lat.length ? `<div class="tiles lats">${lat.join("")}</div>` : ""}
-      ${facts.length ? `<div class="facts">${facts.join("")}</div>` : ""}
+      ${tiles}
     </div>`;
   }
 
@@ -5009,17 +5025,18 @@ class InternetBoxCard extends InternetBoxBase {
     const dl = this._s(sp.download);
     const ul = this._s(sp.upload);
     const ping = this._s(sp.ping);
-    const tile = (s, cls, icon, k, v) =>
-      s
-        ? `<div class="tile ${cls} clickable" role="button" tabindex="0" data-key="${s.entity_id}" data-entity="${s.entity_id}">${spark(hist?.[s.entity_id], hist?.end)}${svgIcon(
-            icon
-          )}<div><div class="k">${k}</div><div class="v">${noValue(s) ? "—" : v}</div></div></div>`
-        : "";
+    // Download and upload of the last test as KPI tiles with the results of the last 24 hours at the bottom.
+    const tile = (st, key, icon, k, c) => {
+      if (!st || noValue(st)) return null;
+      const [v, u] = splitUnit(fmtRate(toBps(st), this._hass, this._config));
+      return { key, k, v, u, icon, c, entity: st.entity_id, spark: spark(hist?.[st.entity_id], hist?.end) };
+    };
     const pingMs = num(ping);
-    const tiles = [
-      tile(dl, "down", ICONS.down, this._t("download"), dl && fmtRate(toBps(dl), this._hass, this._config)),
-      tile(ul, "up", ICONS.up, this._t("upload"), ul && fmtRate(toBps(ul), this._hass, this._config)),
-    ].filter(Boolean);
+    const grid = kpiGrid([
+      tile(dl, `sp_${dl?.entity_id}`, ICONS.down, this._t("download"), "var(--ibc-ok)"),
+      tile(ul, `sp_${ul?.entity_id}`, ICONS.up, this._t("upload"), "var(--info-color, #039be5)"),
+    ]);
+    const tiles = grid ? [grid] : [];
     const pill =
       ping && pingMs !== null
         ? `<span class="chip ping clickable" role="button" tabindex="0" data-entity="${ping.entity_id}">${svgIcon(ICONS.timer)}Ping ${Math.round(pingMs)} ms</span>`
@@ -5031,7 +5048,7 @@ class InternetBoxCard extends InternetBoxBase {
       : "";
     return `<div>
       <div class="section-title">${svgIcon(ICONS.speedtest)}${this._t("speedtest")}${this._speedtestButton(sp)}${pill}</div>
-      ${tiles.length ? `<div class="grid2">${tiles.join("")}</div>` : ""}
+      ${tiles.join("")}
       ${at ? `<div class="facts"><span>${svgIcon(ICONS.clock)}${esc(at)}</span></div>` : ""}
     </div>`;
 
@@ -5324,6 +5341,67 @@ class InternetBoxMiniCard extends InternetBoxCard {
       </ha-card>`;
   }
 }
+
+// KPI tiles (UniFi fork), as in the owner's energy, oil, heating, Tibber and Proxmox cards: a round icon, the label,
+// the value large with a small unit, a sub line and the 24 h curve in its own band at the bottom. Tiles without a
+// value are left out and a row never shows a gap: the last tile of a short row widens until the row is full.
+function fillRows(spans, cols) {
+  const out = spans.map((s) => Math.max(1, Math.min(cols, s)));
+  let used = 0;
+  for (let i = 0; i < out.length; i++) {
+    if (used + out[i] > cols) {
+      out[i - 1] += cols - used;
+      used = 0;
+    }
+    used = (used + out[i]) % cols;
+  }
+  if (used > 0 && out.length) out[out.length - 1] += cols - used;
+  return out;
+}
+
+// "61.9 MB/s" → ["61.9", "MB/s"]; text without a unit stays whole.
+const splitUnit = (text) => {
+  const m = /^(.*\d)\s+(\D+)$/.exec(String(text));
+  return m ? [m[1], m[2]] : [String(text), ""];
+};
+
+function kpiGrid(list, cols = 2) {
+  const tiles = list.filter((x) => x && x.v !== null && x.v !== undefined && x.v !== "");
+  if (!tiles.length) return "";
+  const spans = fillRows(
+    tiles.map((x) => (x.wide ? 2 : 1)),
+    cols
+  );
+  return `<div class="kpis">${tiles
+    .map((x, i) => {
+      const click = x.entity ? ` clickable" role="button" tabindex="0" data-entity="${x.entity}` : "";
+      return `<div class="kpi${x.cls ? ` ${x.cls}` : ""}${click}" data-key="${esc(x.key)}" style="--c:${x.c};grid-column:span ${spans[i]}">${x.spark || ""}
+        <span class="ki">${svgIcon(x.icon)}</span>
+        <span class="kk"${x.title ? ` title="${esc(x.title)}"` : ""}>${esc(x.k)}</span>
+        <span class="kv">${esc(x.v)}${x.u ? `<small>${esc(x.u)}</small>` : ""}</span>
+        ${x.s ? `<span class="ks">${esc(x.s)}</span>` : ""}
+      </div>`;
+    })
+    .join("")}</div>`;
+}
+
+const KPI_STYLE = `
+  .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  @container (max-width: 260px) { .kpis { grid-template-columns: minmax(0, 1fr); } .kpis .kpi { grid-column: auto !important; } }
+  .kpi { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0;
+         padding: 11px 12px 12px; border-radius: 12px; background: var(--secondary-background-color, rgba(127,127,127,.08)); }
+  .kpi > :not(.spark) { position: relative; }
+  .kpi:has(> .spark) { padding-bottom: 36px; }
+  .kpi .spark { position: absolute; inset: auto 0 0; width: 100%; height: 30px; pointer-events: none; }
+  .kpi.clickable:hover { filter: brightness(1.04); }
+  .kpi .ki { width: 32px; height: 32px; flex: none; border-radius: 50%; display: grid; place-items: center; margin-bottom: 2px;
+             color: color-mix(in srgb, var(--c) 82%, var(--primary-text-color)); background: color-mix(in srgb, var(--c) 18%, var(--ha-card-background, var(--card-background-color, #fff))); }
+  .kpi .ki .icon { width: 18px; height: 18px; color: inherit; }
+  .kpi .kk { font-size: 12.5px; line-height: 1.3; color: var(--secondary-text-color); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kpi .kv { font-size: 22px; font-weight: 500; line-height: 1.15; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .kpi .kv small { display: inline-block; white-space: nowrap; font-size: 12px; font-weight: 400; color: var(--secondary-text-color); margin-left: 4px; }
+  .kpi .ks { font-size: 11.5px; line-height: 1.35; color: var(--secondary-text-color); overflow-wrap: anywhere; }
+`;
 
 // ---------------------------------------------------------------------------
 // Visual editors (ha-form)

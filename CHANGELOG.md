@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.6.1-unifi.2 - 2026-11-20
+
+### Features
+- **KPI tiles** in the network section, as in the owner's other cards: download and upload, the WAN latencies (each with its last 24 hours as a curve at the bottom of the tile), the uptime and the public IP (IPv6 under it). A figure without a sensor or value leaves its tile out, and the last tile of a short row widens until the row is full.
+- The speed test's download and upload are KPI tiles too; the ping stays a pill next to the section title, with the time of the test under the tiles.
+- System (gauges), services and the mini card are unchanged.
+
 ## 3.6.1-unifi.1 - 2026-11-18
 
 ### Features

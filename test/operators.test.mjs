@@ -417,8 +417,25 @@ test("UniFi: CPU and RAM gauges next to the temperature, WAN latency tiles named
   assert.ok(gauges.indexOf("sensor.gw_cpu_utilization") < gauges.indexOf("sensor.gw_memory_utilization"));
   assert.ok(gauges.indexOf("sensor.gw_memory_utilization") < gauges.indexOf("sensor.gw_cpu_temperature"));
   assert.match(html, /gauge use clickable warn[^>]*data-entity="sensor\.gw_memory_utilization"/);
-  assert.match(html, /<div class="k" title="Cloudflare WAN Latenz">Cloudflare WAN<\/div><div class="v">8 ms<\/div>/);
+  assert.match(html, /<span class="kk" title="Cloudflare WAN Latenz">Cloudflare WAN<\/span>\s*<span class="kv">8<small>ms<\/small><\/span>/);
   // A second WAN without line has no value: no tile.
   assert.doesNotMatch(html, /gw_google_wan2_latency/);
   assert.equal(boxModel(box, {}).pic, "unifi_rack");
+});
+
+test("KPI tiles (UniFi fork): rows are always full, tiles without a value are left out", () => {
+  const { fillRows, kpiGrid, splitUnit } = load("internet-box-card.js", ["fillRows", "kpiGrid", "splitUnit"]);
+  assert.deepEqual([...fillRows([1, 1, 1], 2)], [1, 1, 2]);
+  assert.deepEqual([...fillRows([1, 1, 1, 1, 1], 2)], [1, 1, 1, 1, 2]);
+  assert.deepEqual([...splitUnit("61.9 MB/s")], ["61.9", "MB/s"]);
+  assert.deepEqual([...splitUnit("18 d 5 h")], ["18 d 5", "h"]);
+  const html = kpiGrid([
+    { key: "down", k: "Download", v: "61.9", u: "MB/s", icon: "M0,0", c: "red", entity: "sensor.down" },
+    { key: "lat", k: "Cloudflare", v: null, icon: "M0,0", c: "red" },
+    { key: "ip", k: "IP", v: "203.0.113.7", icon: "M0,0", c: "red" },
+    { key: "up", k: "Uptime", v: "18 d", icon: "M0,0", c: "red" },
+  ]);
+  assert.equal((html.match(/class="kpi[ "]/g) || []).length, 3);
+  assert.match(html, /data-key="up"[^>]*grid-column:span 2/);
+  assert.equal(kpiGrid([null, false]), "");
 });

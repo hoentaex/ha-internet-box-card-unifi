@@ -112,7 +112,7 @@ async function measure(type, theme, mock) {
         return ratio(paint(...bg.length ? [`rgb(${bg})`] : [], getComputedStyle(n).color), bg);
       });
     return {
-      tileIcons: check(".tile .icon"),
+      tileIcons: check(".tile .icon, .kpi .ki .icon"),
       chips: check(".chip"),
       danger: check(".modal button.danger"),
       dialogIcon: check(".modal h3 .icon"),
