@@ -438,8 +438,8 @@ test("temperatures are read in the sensor's unit and compared in °C", () => {
   assert.match(mini, /data-key="hottest"[^>]*>.*122°F<\/span>/s);
   assert.doesNotMatch(mini, /class="clickable crit" role="button" tabindex="0" data-key="hottest"/);
   const full = el._system(discover(el._hass, "sfr"));
-  assert.match(full, /class="gauge clickable ok"/);
-  assert.match(full, /<b>122°<\/b>/);
+  assert.match(full, /class="gauge clickable temp ok"/);
+  assert.match(full, /<span class="gv">122°<\/span>/);
 });
 
 test("the editor clears a model of another operator when the box changes, and keeps its schema", () => {
@@ -806,7 +806,7 @@ test("Livebox: the status pill follows the WAN connectivity sensor and its link 
 test("thresholds: temperature and storage levels follow the options, with the former values as defaults", async () => {
   const mock = await import("../scripts/mock-states.mjs");
   const tempId = Object.keys(mock.states).find((id) => mock.states[id].attributes.device_class === "temperature");
-  const gaugeOf = (html) => html.match(new RegExp(`class="gauge clickable (\\w*)"[^>]*data-key="${tempId}"`))[1];
+  const gaugeOf = (html) => html.match(new RegExp(`class="gauge clickable temp (\\w*)"[^>]*data-key="${tempId}"`))[1];
   const partOf = (html) => html.match(new RegExp(`class="part clickable (\\w*)"[^>]*data-key="${PART}"`))[1];
   // 60 °C and 85 % used: ok and warn by default (75 / 90 °C, 80 / 90 %).
   const def = (await mockCard({ [tempId]: "60", [PART]: "15" }))._render();

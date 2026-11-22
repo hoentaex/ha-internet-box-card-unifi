@@ -4787,13 +4787,18 @@ class InternetBoxBase extends HTMLElement {
 // Full card
 // ---------------------------------------------------------------------------
 
+/**
+ * Open arc gauge (270°, gap at the bottom), as the gauge tile of ha-cards-kit: a grey track and the share in the tile
+ * colour, drawn as dashes on a circle turned so the arc starts bottom left. Scales with its box.
+ */
 const ring = (pct) => {
-  const r = 26;
-  const c = 2 * Math.PI * r;
+  const r = 29.5;
+  const C = 2 * Math.PI * r;
+  const L = 0.75 * C;
   const p = pct === null ? 0 : Math.max(0, Math.min(100, pct));
-  return `<svg class="ring" viewBox="0 0 64 64">
-    <circle cx="32" cy="32" r="${r}" class="track"/>
-    <circle cx="32" cy="32" r="${r}" class="value" stroke-dasharray="${((p / 100) * c).toFixed(1)} ${c.toFixed(1)}"/>
+  return `<svg class="ring" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="${r}" class="track" stroke-dasharray="${L.toFixed(1)} ${C.toFixed(1)}" transform="rotate(135 32 32)"/>
+    <circle cx="32" cy="32" r="${r}" class="value" stroke-dasharray="${((p / 100) * L).toFixed(1)} ${C.toFixed(1)}" transform="rotate(135 32 32)"/>
   </svg>`;
 };
 
@@ -4813,28 +4818,40 @@ const FULL_STYLE = `
     border-radius: 50%; cursor: pointer; background: transparent; color: inherit; }
   :is(.facts, .section-title) .run:hover:not([aria-disabled]) { background: color-mix(in srgb, var(--primary-color) 15%, transparent); }
   :is(.facts, .section-title) .run[aria-disabled] { cursor: progress; }
-  .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 6px; }
-  .gauge { display: flex; flex-direction: column; align-items: center; position: relative; }
-  .gauge .val .icon { width: 14px; height: 14px; color: var(--secondary-text-color); }
-  .gauge.use:not(.ok, .warn, .crit) { --c: var(--ibc-accent); }
-  .gauge.use .val { flex-direction: column; }
+  /* System: CPU, RAM and temperatures as arc tiles (as the gauge tile of ha-cards-kit): the arc with the icon in a
+     tinted circle, the value and the name under it. Colour per metric; orange / red from the thresholds. */
+  .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+  .gauge { --mc: var(--ibc-accent); --c: var(--mc); display: flex; flex-direction: column; align-items: center; min-width: 0; text-align: center;
+           padding: 10px 6px 9px; border-radius: 12px; background: var(--secondary-background-color, rgba(127,127,127,.08)); }
+  .gauge.cpu { --mc: var(--indigo-color, #5c6bc0); } .gauge.ram { --mc: var(--purple-color, #8e44ad); } .gauge.temp { --mc: var(--deep-orange-color, #ff5722); }
+  .gauge.ok { --c: var(--mc); } .gauge.warn { --c: var(--ibc-warn); } .gauge.crit { --c: var(--ibc-crit); }
+  .gauge.warn, .gauge.crit { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
+                             background: color-mix(in srgb, var(--c) 8%, var(--secondary-background-color, rgba(127,127,127,.08))); }
+  .gauge.clickable:hover { filter: brightness(1.04); }
+  .gauge .arc { position: relative; width: 62px; height: 62px; flex: none; display: grid; place-items: center; }
+  .gauge .gi { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center;
+               color: color-mix(in srgb, var(--c) 85%, var(--primary-text-color)); background: color-mix(in srgb, var(--c) 18%, var(--ha-card-background, var(--card-background-color, #fff))); }
+  .gauge .gi .icon { width: 17px; height: 17px; color: inherit; }
+  .gauge .gv { font-size: 19px; font-weight: 500; line-height: 1.15; margin-top: -6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .gauge .gv small { font-size: 12px; font-weight: 400; color: var(--secondary-text-color); margin-left: 2px; }
+  .gauge.warn .gv, .gauge.crit .gv { color: color-mix(in srgb, var(--c) 70%, var(--primary-text-color)); }
   .lats { margin-top: 6px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
   .tile.lat { --c: var(--accent-color, #ff9800); }
   /* The speed test's ping, a pill at the end of the section title. */
   .section-title .chip.ping { --c: var(--accent-color, #ff9800); margin-left: auto; flex: none; white-space: nowrap; text-transform: none; letter-spacing: 0; }
   .section-title .chip.ping .icon { width: 14px; height: 14px; }
-  .ring { width: 72px; height: 72px; transform: rotate(-90deg); }
-  .ring circle { fill: none; stroke-width: 5; }
-  .ring .track { stroke: var(--divider-color, rgba(127,127,127,.25)); }
-  .ring .value { stroke: var(--c, var(--ibc-accent)); stroke-linecap: round; transition: stroke-dasharray .6s ease; }
-  .gauge .val { position: absolute; top: 0; height: 72px; display: flex; align-items: center; justify-content: center; }
-  .gauge .val b { font-size: 16px; font-weight: 500; }
-  /* Narrow card: smaller rings, so three still fit on one line. */
+  .ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ring circle { fill: none; stroke-width: 4; stroke-linecap: round; }
+  .ring .track { stroke: color-mix(in srgb, var(--secondary-text-color) 22%, transparent); }
+  .ring .value { stroke: var(--c, var(--ibc-accent)); transition: stroke-dasharray .6s ease; }
+  /* Narrow card: smaller arcs, so three still fit on one line. */
   @container (max-width: 300px) {
-    .gauges { grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); }
-    .ring { width: 58px; height: 58px; }
-    .gauge .val { height: 58px; }
-    .gauge .val b { font-size: 14px; }
+    .gauges { grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 6px; }
+    .gauge { padding: 8px 4px 7px; }
+    .gauge .arc { width: 50px; height: 50px; }
+    .gauge .gi { width: 25px; height: 25px; }
+    .gauge .gi .icon { width: 14px; height: 14px; }
+    .gauge .gv { font-size: 16px; margin-top: -4px; }
   }
   .gauge .lbl { font-size: 12px; color: var(--secondary-text-color); margin-top: 0; text-align: center; white-space: nowrap;
                 overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -5068,7 +5085,7 @@ class InternetBoxCard extends InternetBoxBase {
   _system(box) {
     const sc = box.scalars;
     if (!box.temps.length && !box.fans.length && !sc.cpu && !sc.ram) return "";
-    // CPU and RAM use (UniFi gateway): a gauge each, like the temperatures.
+    // CPU and RAM use (UniFi gateway): an arc tile each, like the temperatures.
     const usage = [
       [sc.cpu, "cpu"],
       [sc.ram, "ram"],
@@ -5076,10 +5093,10 @@ class InternetBoxCard extends InternetBoxBase {
       .filter(([id]) => id)
       .map(([id, metric]) => {
         const v = num(this._s(id));
-        return `<div class="gauge use clickable ${this._level(v, metric)}" role="button" tabindex="0" data-entity="${id}">
-        ${ring(v)}
-        <div class="val">${svgIcon(ICONS[metric])}<b>${v === null ? "—" : `${Math.round(v)}%`}</b></div>
-        <div class="lbl">${this._t(metric)}</div>
+        return `<div class="gauge clickable ${metric} ${this._level(v, metric)}" role="button" tabindex="0" data-entity="${id}">
+        <span class="arc">${ring(v)}<span class="gi">${svgIcon(ICONS[metric])}</span></span>
+        <span class="gv">${v === null ? "—" : `${Math.round(v)}<small>%</small>`}</span>
+        <span class="lbl">${this._t(metric)}</span>
       </div>`;
       });
     // "Température CPU 0" -> "CPU 0", "Température 1" -> "Temp. 1"; CPU sensors first.
@@ -5092,10 +5109,10 @@ class InternetBoxCard extends InternetBoxBase {
     const gauges = temps.map(({ id, name, label }) => {
       // Thresholds and gauge (0-100) in °C, whatever unit the sensor reports; the value in its own unit.
       const { raw, c } = temperature(this._s(id));
-      return `<div class="gauge clickable ${this._level(c, "temp")}" role="button" tabindex="0" data-key="${id}" data-entity="${id}" title="${esc(name)}">
-        ${ring(c)}
-        <div class="val"><b>${raw === null ? "—" : `${Math.round(raw)}°`}</b></div>
-        <div class="lbl">${esc(label)}</div>
+      return `<div class="gauge clickable temp ${this._level(c, "temp")}" role="button" tabindex="0" data-key="${id}" data-entity="${id}" title="${esc(name)}">
+        <span class="arc">${ring(c)}<span class="gi">${svgIcon(ICONS.temp)}</span></span>
+        <span class="gv">${raw === null ? "—" : `${Math.round(raw)}°`}</span>
+        <span class="lbl">${esc(label)}</span>
       </div>`;
     });
     const fans = box.fans.map(({ id, name }) => {
