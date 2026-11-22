@@ -412,11 +412,11 @@ test("UniFi: CPU and RAM gauges next to the temperature, WAN latency tiles named
   assert.equal(box.scalars.ram, "sensor.gw_memory_utilization");
   assert.equal(box.latency.length, 3);
   const html = renderWith(InternetBoxCard, hass);
-  // CPU, RAM, then the temperature, in one row of gauges; the RAM above its warning threshold.
+  // CPU, RAM, then the temperature, in one row of arc tiles; the RAM above its warning threshold.
   const gauges = html.match(/<div class="gauges">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)[0];
   assert.ok(gauges.indexOf("sensor.gw_cpu_utilization") < gauges.indexOf("sensor.gw_memory_utilization"));
   assert.ok(gauges.indexOf("sensor.gw_memory_utilization") < gauges.indexOf("sensor.gw_cpu_temperature"));
-  assert.match(html, /gauge use clickable warn[^>]*data-entity="sensor\.gw_memory_utilization"/);
+  assert.match(html, /gauge clickable ram warn[^>]*data-entity="sensor\.gw_memory_utilization"/);
   assert.match(html, /<span class="kk" title="Cloudflare WAN Latenz">Cloudflare WAN<\/span>\s*<span class="kv">8<small>ms<\/small><\/span>/);
   // A second WAN without line has no value: no tile.
   assert.doesNotMatch(html, /gw_google_wan2_latency/);

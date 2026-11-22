@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.6.1-unifi.4 - 2026-11-22
+
+### Features
+- **Arc tiles instead of rings** in the system section, as the gauge tile of the owner's Cards Kit: each CPU, RAM and temperature value is a tile with an open arc (270°, open at the bottom), its icon in a tinted circle inside the arc, the value and the name under it. This applies to every box that shows temperatures, not only UniFi gateways.
+- Colour per metric (CPU indigo, RAM purple, temperatures deep orange); from the warning and critical thresholds the arc, the value, the border and the tile turn orange or red. Narrow cards get smaller arcs, so three still fit on one line.
+
 ## 3.6.1-unifi.3 - 2026-11-20
 
 ### Fixes

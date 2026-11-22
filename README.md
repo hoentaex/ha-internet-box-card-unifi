@@ -27,7 +27,7 @@ Screenshots with mock data, rendered by `npm run build && npm run screenshots:un
 | WAN latency, with its 24 h curve | the gateway's WAN latency sensors (Google, Cloudflare, Microsoft; disabled by default), one tile each |
 | Uptime | the gateway's uptime sensor |
 | Speed test: download and upload with their 24 h curve, ping, time of the test | the [Speedtest.net](https://www.home-assistant.io/integrations/speedtestdotnet/) integration, when set up |
-| CPU and RAM use | the gateway's CPU and memory utilization sensors, rings next to the temperatures |
+| CPU and RAM use | the gateway's CPU and memory utilization sensors, arc tiles next to the temperatures |
 | Temperatures | the gateway's temperature sensors (CPU, local, PHY…) |
 | Connected devices | the integration's client trackers |
 | Restart button | the gateway's restart button (not the PoE power cycle buttons) |
@@ -159,8 +159,8 @@ rate_unit: bits
 | `show_storage` | full | `true` | Disk partitions, when the gateway exposes some |
 | `show_services` | full | `true` | Connected devices |
 | `section_order` | full | `[network, speedtest, system, storage, services]` | Order of the sections, see below |
-| `cpu_warning` / `cpu_critical` | both | `80` / `95` | CPU use (in %) from which the ring turns orange / red |
-| `ram_warning` / `ram_critical` | both | `85` / `95` | RAM use (in %) from which the ring turns orange / red |
+| `cpu_warning` / `cpu_critical` | both | `80` / `95` | CPU use (in %) from which the arc tile turns orange / red |
+| `ram_warning` / `ram_critical` | both | `85` / `95` | RAM use (in %) from which the arc tile turns orange / red |
 | `temp_warning` / `temp_critical` | both | `75` / `90` | Temperature (in °C, whatever the sensor's unit) from which it turns orange / red |
 | `disk_warning` / `disk_critical` | both | `80` / `90` | Disk usage (in %) from which a partition turns orange / red |
 | `zoom` | mini | `true` | Detail button at the top right: shows the full card in place of the mini card, and back |
